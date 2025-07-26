@@ -2,7 +2,7 @@ import sys
 import os
 from pathlib import Path
 import streamlit as st
-from src.agents import AgentsManager  # Usar o AgentsManager melhorado
+from src.agents import AgentsManager
 from src.database import DatabaseManager
 from langchain.llms import OpenAI
 from dotenv import load_dotenv
@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS customizado para melhor aparência.
+# CSS customizado
 st.markdown("""
 <style>
     .main-header {
@@ -36,34 +36,25 @@ st.markdown("""
         margin-bottom: 2rem;
     }
     
-    .metric-card {
+    .output-card {
         background: white;
-        padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border-left: 4px solid #667eea;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
     }
     
-    .insight-box {
+    .text-output {
         background: #f8f9fa;
         padding: 1rem;
         border-radius: 8px;
-        border-left: 4px solid #28a745;
-        margin: 1rem 0;
+        border-left: 4px solid #4e73df;
     }
     
-    .error-box {
-        background: #fff5f5;
-        padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #e53e3e;
-        margin: 1rem 0;
-    }
-    
-    .table-container {
-        max-height: 400px;
+    .table-output {
+        max-height: 500px;
         overflow-y: auto;
-        border: 1px solid #dee2e6;
+        border: 1px solid #e3e6f0;
         border-radius: 8px;
     }
 </style>
@@ -73,17 +64,15 @@ st.markdown("""
 st.markdown("""
 <div class="main-header">
     <h1>📊 Analytics com IA - Versão Completa</h1>
-    <p>Análise inteligente com tabelas, resumos e visualizações interativas</p>
+    <p>Obtenha tabelas, gráficos ou resumos textuais conforme sua necessidade</p>
 </div>
 """, unsafe_allow_html=True)
 
 # Verificação do banco de dados
 DB_PATH = PROJECT_ROOT / 'data' / 'clientes_completo.db'
 
-# Função de diagnóstico rápido
 @st.cache_data
 def quick_database_check():
-    """Verificação rápida do banco de dados com cache."""
     if not DB_PATH.exists():
         return False, f"Arquivo não encontrado: {DB_PATH}"
     
@@ -101,22 +90,10 @@ def quick_database_check():
     except Exception as e:
         return False, f"Erro: {str(e)}"
 
-# Verificar banco
 db_ok, db_message = quick_database_check()
 
 if not db_ok:
     st.error(f"❌ **Problema no banco de dados**: {db_message}")
-    
-    with st.expander("🔧 Diagnóstico Detalhado"):
-        st.write("Execute o diagnóstico para identificar problemas específicos:")
-        if st.button("Executar Diagnóstico"):
-            try:
-                with DatabaseManager(str(DB_PATH)) as db:
-                    schema = db.get_database_schema()
-                    st.json(schema)
-            except Exception as e:
-                st.error(f"Erro no diagnóstico: {e}")
-    
     st.stop()
 else:
     st.success(db_message)
@@ -128,7 +105,6 @@ try:
         if not st.session_state.db.connect():
             st.error("Falha ao conectar ao banco de dados")
             st.stop()
-
 except Exception as e:
     st.error(f"Erro na inicialização: {str(e)}")
     st.stop()
@@ -137,7 +113,6 @@ except Exception as e:
 with st.sidebar:
     st.header("⚙️ Configurações")
     
-    # Configuração da API
     openai_key = os.getenv("OPENAI_API_KEY", "")
     key_input = st.text_input(
         "🔑 Chave OpenAI",
@@ -148,7 +123,6 @@ with st.sidebar:
     )
     openai_key = key_input or openai_key
     
-    # Status da chave
     if openai_key:
         if openai_key.startswith('sk-') and len(openai_key) > 20:
             st.success("✅ Chave válida")
@@ -162,62 +136,54 @@ with st.sidebar:
     
     st.divider()
     
-    # Informações do banco
-    st.subheader("📊 Informações do Banco")
-    try:
-        schema = st.session_state.db.get_database_schema()
-        for table, info in schema.items():
-            with st.expander(f"📋 {table} ({info['count']:,} registros)"):
-                st.write("**Colunas:**")
-                for col in info['columns']:
-                    st.write(f"• {col}")
-    except Exception as e:
-        st.error(f"Erro ao carregar schema: {e}")
+    # Tipo de saída desejada
+    st.subheader("📤 Tipo de Saída")
+    output_type = st.radio(
+        "Selecione o formato de saída:",
+        ["📋 Tabela", "📊 Gráfico", "📝 Texto", "🔍 Automático"],
+        index=3,
+        help="Escolha o formato que deseja receber os resultados"
+    )
+    
+    # Inicializar chart_type com valor padrão
+    chart_type = "Barras"
+    
+    # Opções específicas para gráficos
+    if output_type == "📊 Gráfico":
+        chart_type = st.selectbox(
+            "Tipo de gráfico:",
+            ["Barras", "Pizza", "Linha", "Área", "Histograma"]
+        )
     
     st.divider()
     
     # Exemplos de consultas
     st.subheader("💡 Exemplos de Consultas")
-    exemplos = [
-        "Top 10 estados com mais clientes",
-        "Vendas por categoria em 2024",
-        "Evolução mensal de vendas",
-        "Clientes que mais compraram", 
-        "Distribuição por canal de venda",
-        "Suporte por tipo de contato",
-        "Efetividade das campanhas",
-        "Ticket médio por região"
-    ]
+    exemplos = {
+        "Top 10 clientes": "📋 Tabela",
+        "Distribuição por estado": "📊 Gráfico",
+        "Resumo de vendas": "📝 Texto",
+        "Evolução mensal": "📊 Gráfico"
+    }
     
-    for exemplo in exemplos:
-        if st.button(f"📝 {exemplo}", key=f"ex_{exemplo}"):
+    for exemplo, tipo in exemplos.items():
+        if st.button(f"{tipo} {exemplo}"):
             st.session_state.exemplo_selecionado = exemplo
+            st.session_state.output_type = tipo
 
 # Interface principal
 st.header("🎯 Faça sua Análise")
 
 # Campo de entrada com exemplo selecionado
 pergunta_default = st.session_state.get('exemplo_selecionado', '')
+output_type = st.session_state.get('output_type', output_type)
+
 user_input = st.text_area(
     "💬 Descreva o que você quer analisar:",
     value=pergunta_default,
     height=100,
-    placeholder="Ex: Mostre o ranking dos 5 estados com mais vendas em 2024"
+    placeholder="Ex: Mostre os 10 clientes que mais compraram em formato de tabela"
 )
-
-# Opções avançadas
-with st.expander("⚙️ Opções Avançadas"):
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        show_debug = st.checkbox("🔍 Mostrar detalhes técnicos", value=False)
-        auto_chart = st.checkbox("📊 Gerar gráfico automaticamente", value=True)
-    
-    with col2:
-        chart_type = st.selectbox(
-            "📈 Tipo de gráfico preferido",
-            ["Automático", "Barras", "Pizza", "Linha", "Scatter", "Apenas Tabela"]
-        )
 
 # Botão de análise
 if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured):
@@ -225,7 +191,6 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
         st.warning("⚠️ Por favor, descreva sua análise!")
         st.stop()
     
-    # Limpar exemplo selecionado
     if 'exemplo_selecionado' in st.session_state:
         del st.session_state.exemplo_selecionado
     
@@ -250,175 +215,153 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
     # Processamento da análise
     with st.spinner("🔄 Processando sua solicitação..."):
         try:
-            # 1. Interpretação
+            # Interpretação da solicitação
             interpretation = st.session_state.agents.interpret_request(user_input)
             
-            # 2. Geração SQL
+            # Sobrescrever tipo de saída se não for automático
+            if output_type != "🔍 Automático":
+                interpretation["tipo_grafico"] = {
+                    "📋 Tabela": "tabela",
+                    "📊 Gráfico": chart_type.lower(),
+                    "📝 Texto": "texto"
+                }[output_type]
+            
+            # Geração SQL
             sql_query = st.session_state.agents.generate_sql(interpretation)
             
-            # 3. Execução da query
+            # Execução da query
             results = st.session_state.db.execute_query(sql_query)
             
-            # 4. Formatação completa da resposta
+            # Formatação da resposta
             response = st.session_state.agents.format_complete_response(
                 results, interpretation, user_input
             )
             
-            # Armazenar resultados na sessão
             st.session_state.last_response = response
             st.session_state.last_query = sql_query
-            st.session_state.last_interpretation = interpretation
+            st.session_state.interpretation = interpretation
             
         except Exception as e:
             st.error(f"❌ Erro no processamento: {str(e)}")
-            if show_debug and 'last_query' in st.session_state:
-                st.code(st.session_state.last_query, language="sql")
             st.stop()
 
 # Exibição dos resultados
 if 'last_response' in st.session_state:
     response = st.session_state.last_response
     
-    if response["success"]:
-        # Layout em colunas
-        col1, col2 = st.columns([2, 1])
+    if not response["success"]:
+        st.error(response["summary"])
+        st.stop()
+    
+    # Determinar o tipo de saída
+    if output_type == "🔍 Automático":
+        output_type = {
+            "tabela": "📋 Tabela",
+            "barras": "📊 Gráfico",
+            "pizza": "📊 Gráfico",
+            "linha": "📊 Gráfico",
+            "texto": "📝 Texto"
+        }.get(st.session_state.interpretation.get("tipo_grafico", "tabela"), "📋 Tabela")
         
-        with col1:
-            st.header("📊 Resultados da Análise")
-            
-            # Resumo textual
-            st.markdown("""
-            <div class="insight-box">
-            """ + response["summary"] + """
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Métricas rápidas
-            if len(response["data"]) > 0:
-                metric_cols = st.columns(3)
-                
-                with metric_cols[0]:
-                    st.metric(
-                        "📋 Total de Registros",
-                        f"{response['total_records']:,}",
-                        delta=None
-                    )
-                
-                with metric_cols[1]:
-                    numeric_cols = response["data"].select_dtypes(include=['number']).columns
-                    if len(numeric_cols) > 0:
-                        total_value = response["data"][numeric_cols[0]].sum()
-                        st.metric(
-                            f"💰 Total {numeric_cols[0].replace('_', ' ').title()}",
-                            f"{total_value:,.2f}",
-                            delta=None
-                        )
-                
-                with metric_cols[2]:
-                    if len(numeric_cols) > 0:
-                        avg_value = response["data"][numeric_cols[0]].mean()
-                        st.metric(
-                            f"📊 Média {numeric_cols[0].replace('_', ' ').title()}",
-                            f"{avg_value:,.2f}",
-                            delta=None
-                        )
+        # Definir chart_type baseado na interpretação automática
+        if output_type == "📊 Gráfico":
+            auto_chart_type = st.session_state.interpretation.get("tipo_grafico", "barras")
+            chart_type = {
+                "barras": "Barras",
+                "pizza": "Pizza",
+                "linha": "Linha"
+            }.get(auto_chart_type, "Barras")
+    
+    # Container principal
+    with st.container():
+        st.markdown(f'<div class="output-card">', unsafe_allow_html=True)
         
-        with col2:
-            # Detalhes técnicos (se habilitado)
-            if show_debug:
-                with st.expander("🔍 Detalhes Técnicos", expanded=True):
-                    st.subheader("Interpretação")
-                    st.json(st.session_state.last_interpretation)
-                    
-                    st.subheader("Query SQL")
-                    st.code(st.session_state.last_query, language="sql")
+        # Cabeçalho da análise
+        st.subheader("🔍 Resultados da Análise")
+        st.caption(f"📌 {response['interpretation']['intencao']}")
         
-        # Abas para diferentes visualizações
-        tab1, tab2, tab3 = st.tabs(["📋 Tabela", "📊 Gráfico Matplotlib", "📈 Gráfico Interativo"])
-        
-        with tab1:
-            st.subheader("📋 Dados Tabulares")
-            
-            # Tabela com paginação
-            if len(response["data"]) > 50:
-                st.warning(f"⚠️ Mostrando 50 de {len(response['data'])} registros")
-                display_df = response["data"].head(50)
-            else:
-                display_df = response["data"]
-            
-            # Formatação especial para valores monetários
-            formatted_df = display_df.copy()
-            for col in formatted_df.select_dtypes(include=['number']).columns:
-                if 'valor' in col.lower() or 'preco' in col.lower():
-                    formatted_df[col] = formatted_df[col].apply(lambda x: f"R$ {x:,.2f}")
-                elif 'count' not in col.lower():
-                    formatted_df[col] = formatted_df[col].apply(lambda x: f"{x:,.0f}")
-            
+        # Exibir conforme o tipo selecionado
+        if output_type == "📋 Tabela":
+            st.markdown('<div class="table-output">', unsafe_allow_html=True)
             st.dataframe(
-                formatted_df,
+                response["data"],
                 use_container_width=True,
-                height=400
+                height=500
             )
+            st.markdown('</div>', unsafe_allow_html=True)
             
-            # Download dos dados
+            # Botão de download
             csv = response["data"].to_csv(index=False)
             st.download_button(
-                label="📥 Download CSV",
-                data=csv,
-                file_name=f"analise_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                "📥 Exportar para CSV",
+                csv,
+                file_name=f"dados_{datetime.now().strftime('%Y%m%d')}.csv",
                 mime="text/csv"
             )
         
-        with tab2:
-            st.subheader("📊 Visualização Estática")
-            
-            if response["matplotlib_fig"] is not None:
-                st.pyplot(response["matplotlib_fig"])
+        elif output_type == "📊 Gráfico":
+            # Verificar se temos dados suficientes
+            if len(response["data"].columns) < 2:
+                st.warning("⚠️ Dados insuficientes para gerar o gráfico (necessário pelo menos 2 colunas)")
+                st.dataframe(response["data"])
             else:
-                st.info("🔍 Gráfico não disponível para este tipo de dados")
+                # Selecionar gráfico apropriado
+                if chart_type == "Barras":
+                    fig = px.bar(
+                        response["data"],
+                        x=response["data"].columns[0],
+                        y=response["data"].columns[1],
+                        title=response["interpretation"]["intencao"]
+                    )
+                elif chart_type == "Pizza":
+                    fig = px.pie(
+                        response["data"],
+                        values=response["data"].columns[1],
+                        names=response["data"].columns[0],
+                        title=response["interpretation"]["intencao"]
+                    )
+                elif chart_type == "Linha":
+                    fig = px.line(
+                        response["data"],
+                        x=response["data"].columns[0],
+                        y=response["data"].columns[1],
+                        title=response["interpretation"]["intencao"],
+                        markers=True
+                    )
+                elif chart_type == "Área":
+                    fig = px.area(
+                        response["data"],
+                        x=response["data"].columns[0],
+                        y=response["data"].columns[1],
+                        title=response["interpretation"]["intencao"]
+                    )
+                else:  # Histograma
+                    fig = px.histogram(
+                        response["data"],
+                        x=response["data"].columns[0],
+                        title=response["interpretation"]["intencao"]
+                    )
+                
+                st.plotly_chart(fig, use_container_width=True)
         
-        with tab3:
-            st.subheader("📈 Visualização Interativa")
+        elif output_type == "📝 Texto":
+            st.markdown('<div class="text-output">', unsafe_allow_html=True)
+            st.markdown(response["summary"])
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Detalhes técnicos (expandível)
+        with st.expander("🔧 Detalhes Técnicos"):
+            st.subheader("Interpretação")
+            st.json(st.session_state.interpretation)
             
-            if response["plotly_fig"] is not None:
-                st.plotly_chart(response["plotly_fig"], use_container_width=True)
-            else:
-                # Criar gráfico básico com Plotly se não houver
-                if len(response["data"]) > 0 and len(response["data"].columns) >= 2:
-                    try:
-                        x_col = response["data"].columns[0]
-                        y_col = response["data"].columns[1]
-                        
-                        if chart_type.lower() == "pizza":
-                            fig = px.pie(response["data"], values=y_col, names=x_col)
-                        elif chart_type.lower() == "linha":
-                            fig = px.line(response["data"], x=x_col, y=y_col, markers=True)
-                        else:
-                            fig = px.bar(response["data"], x=x_col, y=y_col)
-                        
-                        st.plotly_chart(fig, use_container_width=True)
-                    except Exception as e:
-                        st.info(f"🔍 Não foi possível gerar gráfico: {e}")
-                else:
-                    st.info("🔍 Dados insuficientes para gráfico")
-    
-    else:
-        st.markdown("""
-        <div class="error-box">
-        """ + response["summary"] + """
-        </div>
-        """, unsafe_allow_html=True)
+            st.subheader("Query SQL")
+            st.code(st.session_state.last_query, language="sql")
+            
+            st.subheader("Dados Brutos")
+            st.dataframe(response["data"].head(10))
 
 # Rodapé
 st.divider()
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.caption("🤖 **Sistema de IA**: Análise inteligente de dados")
-
-with col2:
-    st.caption("📊 **Tecnologias**: Streamlit + LangChain + OpenAI")
-
-with col3:
-    if 'last_response' in st.session_state:
-        st.caption(f"⏱️ **Última análise**: {st.session_state.last_response['total_records']} registros")
+st.caption("📅 Última atualização: " + datetime.now().strftime("%d/%m/%Y %H:%M"))
