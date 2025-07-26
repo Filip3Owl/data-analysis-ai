@@ -39,10 +39,13 @@ st.markdown("""
         --primary: #667eea;
         --secondary: #764ba2;
         --light-bg: #f8fafc;
-        --dark-text: #ffffff;  /* Texto branco */
+        --dark-text: #1e293b;      /* Texto escuro para melhor legibilidade */
         --light-text: #f8fafc;
-        --card-bg: #2d3748;    /* Cinza escuro para cards */
-        --container-bg: #4a5568; /* Cinza médio para containers */
+        --card-bg: #ffffff;        /* Fundo branco para cards */
+        --container-bg: #f8fafc;   /* Fundo claro para containers */
+        --sidebar-bg: #ffffff;     /* Fundo branco para sidebar */
+        --schema-bg: #f1f5f9;      /* Fundo cinza claro para schema */
+        --border-color: #e2e8f0;
     }
     
     body {
@@ -63,7 +66,7 @@ st.markdown("""
         background-color: var(--container-bg);
         padding: 1.5rem;
         border-radius: 8px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--border-color);
         margin-bottom: 1.5rem;
         color: var(--dark-text);
     }
@@ -72,7 +75,7 @@ st.markdown("""
         background-color: var(--container-bg);
         padding: 1.5rem;
         border-radius: 8px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--border-color);
         margin-bottom: 1.5rem;
         color: var(--dark-text);
     }
@@ -114,10 +117,10 @@ st.markdown("""
     .table-container {
         max-height: 500px;
         overflow-y: auto;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--border-color);
         border-radius: 8px;
         margin: 1rem 0;
-        background-color: var(--container-bg);
+        background-color: var(--card-bg);
     }
     
     .dataframe {
@@ -135,7 +138,7 @@ st.markdown("""
     
     .dataframe td {
         color: var(--dark-text) !important;
-        background-color: var(--container-bg) !important;
+        background-color: var(--card-bg) !important;
     }
     
     .stButton>button {
@@ -176,26 +179,67 @@ st.markdown("""
     
     /* Ajuste para o expander */
     .st-expander {
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--border-color);
         border-radius: 8px;
-        background-color: var(--container-bg);
+        background-color: var(--card-bg);
     }
     
     .st-expander .st-expanderHeader {
-        color: var(--dark-text);
+        color: var(--dark-text) !important;
         font-weight: 600;
+        background-color: var(--card-bg) !important;
     }
     
     .st-expander .st-expanderContent {
-        color: var(--dark-text);
+        color: var(--dark-text) !important;
+        background-color: var(--card-bg) !important;
     }
     
+    /* Correção para informações do schema - PROBLEMA PRINCIPAL */
     .schema-info {
-        background: #f8f9fa;
-        padding: 0.5rem;
-        border-radius: 4px;
-        margin: 0.25rem 0;
-        font-size: 0.85rem;
+        background: var(--schema-bg) !important;
+        padding: 0.8rem !important;
+        border-radius: 6px !important;
+        margin: 0.4rem 0 !important;
+        font-size: 0.9rem !important;
+        color: var(--dark-text) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    .schema-info strong {
+        color: var(--primary) !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Sidebar styling */
+    .css-1d391kg {
+        background-color: var(--sidebar-bg) !important;
+    }
+    
+    /* Botões da sidebar */
+    .stButton button {
+        width: 100% !important;
+        text-align: left !important;
+        background-color: var(--card-bg) !important;
+        color: var(--dark-text) !important;
+        border: 1px solid var(--border-color) !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .stButton button:hover {
+        background-color: var(--primary) !important;
+        color: white !important;
+        border-color: var(--primary) !important;
+    }
+    
+    /* Texto da sidebar */
+    .css-1d391kg .stMarkdown {
+        color: var(--dark-text) !important;
+    }
+    
+    /* Subheaders da sidebar */
+    .css-1d391kg h2, .css-1d391kg h3 {
+        color: var(--dark-text) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -286,15 +330,18 @@ with st.sidebar:
         else:
             for table_name, table_info in schema.items():
                 with st.expander(f"📋 {table_name} ({table_info.get('count', 0):,} registros)"):
-                    st.write("**Colunas:**")
+                    st.markdown("**Colunas:**")
                     columns = table_info.get('columns', [])
                     types = table_info.get('types', [])
                     
                     if columns:
                         for i, col in enumerate(columns):
                             col_type = types[i] if i < len(types) else "N/A"
-                            st.markdown(f"<div class='schema-info'>• <strong>{col}</strong> ({col_type})</div>", 
-                                      unsafe_allow_html=True)
+                            st.markdown(f"""
+                            <div class='schema-info'>
+                                • <strong>{col}</strong> <span style='color: #666;'>({col_type})</span>
+                            </div>
+                            """, unsafe_allow_html=True)
                     else:
                         st.write("Nenhuma coluna encontrada")
                         
@@ -309,17 +356,54 @@ with st.sidebar:
     
     st.divider()
     
-    # Exemplos de consultas
+    # Exemplos de consultas - EXPANDIDOS
     st.subheader("💡 Exemplos de Consultas")
     exemplos = {
-        "Top 10 clientes": "📋 Tabela",
-        "Distribuição por estado": "📊 Gráfico",
-        "Resumo de vendas": "📝 Texto",
-        "Evolução mensal": "📊 Gráfico"
+        "Top 10 clientes por vendas": "📋 Tabela",
+        "Clientes por estado": "📊 Gráfico", 
+        "Vendas dos últimos 30 dias": "📊 Gráfico",
+        "Resumo geral de clientes": "📝 Texto",
+        "Clientes que compraram via app": "📋 Tabela",
+        "5 estados com mais clientes via app em maio": "📋 Tabela",
+        "Clientes em campanhas WhatsApp 2024": "📋 Tabela",
+        "Categorias com mais compras por cliente": "📊 Gráfico",
+        "Reclamações não resolvidas por canal": "📊 Gráfico",
+        "Evolução de vendas mensais": "📊 Gráfico",
+        "Top 10 produtos mais vendidos": "📋 Tabela",
+        "Distribuição de clientes por idade": "📊 Gráfico",
+        "Análise de satisfação por região": "📊 Gráfico"
     }
     
-    for exemplo, tipo in exemplos.items():
-        if st.button(f"{tipo} {exemplo}", key=f"exemplo_{exemplo}"):
+    # Organizar exemplos em categorias
+    st.markdown("**📊 Análises de Vendas:**")
+    vendas_exemplos = {k: v for k, v in exemplos.items() if any(palavra in k.lower() for palavra in ['vendas', 'produto', 'top', 'cliente'])}
+    
+    for exemplo, tipo in vendas_exemplos.items():
+        if st.button(f"{tipo} {exemplo}", key=f"exemplo_vendas_{exemplo}"):
+            st.session_state.exemplo_selecionado = exemplo
+            st.session_state.output_type = tipo
+    
+    st.markdown("**📱 Análises de Canais:**")
+    canais_exemplos = {k: v for k, v in exemplos.items() if any(palavra in k.lower() for palavra in ['app', 'whatsapp', 'canal', 'reclamações'])}
+    
+    for exemplo, tipo in canais_exemplos.items():
+        if st.button(f"{tipo} {exemplo}", key=f"exemplo_canais_{exemplo}"):
+            st.session_state.exemplo_selecionado = exemplo
+            st.session_state.output_type = tipo
+    
+    st.markdown("**🌍 Análises Geográficas:**")
+    geo_exemplos = {k: v for k, v in exemplos.items() if any(palavra in k.lower() for palavra in ['estado', 'região', 'distribuição'])}
+    
+    for exemplo, tipo in geo_exemplos.items():
+        if st.button(f"{tipo} {exemplo}", key=f"exemplo_geo_{exemplo}"):
+            st.session_state.exemplo_selecionado = exemplo
+            st.session_state.output_type = tipo
+    
+    st.markdown("**📈 Análises Temporais:**")
+    tempo_exemplos = {k: v for k, v in exemplos.items() if any(palavra in k.lower() for palavra in ['maio', '2024', 'evolução', 'mensais', 'dias'])}
+    
+    for exemplo, tipo in tempo_exemplos.items():
+        if st.button(f"{tipo} {exemplo}", key=f"exemplo_tempo_{exemplo}"):
             st.session_state.exemplo_selecionado = exemplo
             st.session_state.output_type = tipo
 
@@ -366,7 +450,27 @@ with st.expander("⚙️ Opções Avançadas"):
             ["Automático", "Barras", "Pizza", "Linha", "Scatter", "Apenas Tabela"]
         )
 
-# Função para identificar colunas relevantes para métricas
+# Função para pré-processar a consulta do usuário
+def preprocess_user_query(query):
+    """Melhora a consulta do usuário para melhor interpretação pela IA"""
+    
+    # Mapeamento de termos comuns
+    improvements = {
+        "app": "canal = 'app' OR canal = 'mobile' OR canal = 'aplicativo'",
+        "maio": "MONTH(data_compra) = 5 OR strftime('%m', data_compra) = '05'",
+        "junho": "MONTH(data_compra) = 6 OR strftime('%m', data_compra) = '06'", 
+        "julho": "MONTH(data_compra) = 7 OR strftime('%m', data_compra) = '07'",
+        "via app": "através do aplicativo móvel",
+        "compraram": "fizeram compras"
+    }
+    
+    processed_query = query
+    
+    # Adicionar contexto sobre estrutura de dados
+    context_hint = " (Considere que temos dados de clientes com colunas como: nome, estado, cidade, data_compra, canal_venda, valor_compra)"
+    
+    return processed_query + context_hint
+
 def get_relevant_metric_columns(df):
     """Identifica colunas numéricas relevantes para métricas, excluindo IDs e outros campos irrelevantes."""
     if df.empty:
@@ -421,8 +525,11 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
     # Processamento da análise
     with st.spinner("🔄 Processando sua solicitação..."):
         try:
+            # Pré-processar a consulta do usuário
+            processed_input = preprocess_user_query(user_input)
+            
             # Interpretação da solicitação
-            interpretation = st.session_state.agents.interpret_request(user_input)
+            interpretation = st.session_state.agents.interpret_request(processed_input)
             
             # Sobrescrever tipo de saída se não for automático
             if output_type != "🔍 Automático":
@@ -435,9 +542,43 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
             # Geração SQL
             sql_query = st.session_state.agents.generate_sql(interpretation)
             
-            # Execução da query
+            # Executação da query
             results = st.session_state.db.execute_query(sql_query)
             
+            # Debug: mostrar resultados brutos se não há dados
+            if results is None or (isinstance(results, pd.DataFrame) and len(results) == 0):
+                st.warning("⚠️ A consulta não retornou dados. Verificando possíveis problemas...")
+                
+                # Mostrar a query para debug
+                st.code(sql_query, language="sql")
+                
+                # Tentar queries de diagnóstico
+                try:
+                    # Verificar se existem dados na tabela principal
+                    test_query = "SELECT COUNT(*) as total FROM clientes LIMIT 1"
+                    test_result = st.session_state.db.execute_query(test_query)
+                    if test_result is not None and len(test_result) > 0:
+                        st.info(f"Total de registros na tabela clientes: {test_result.iloc[0]['total']}")
+                    
+                    # Verificar estrutura da tabela
+                    schema_query = "PRAGMA table_info(clientes)"
+                    schema_result = st.session_state.db.execute_query(schema_query)
+                    if schema_result is not None and len(schema_result) > 0:
+                        st.write("Estrutura da tabela:")
+                        st.dataframe(schema_result)
+                    
+                    # Verificar dados de exemplo
+                    sample_query = "SELECT * FROM clientes LIMIT 5"
+                    sample_result = st.session_state.db.execute_query(sample_query)
+                    if sample_result is not None and len(sample_result) > 0:
+                        st.write("Dados de exemplo:")
+                        st.dataframe(sample_result)
+                        
+                except Exception as debug_e:
+                    st.error(f"Erro no diagnóstico: {debug_e}")
+                
+                st.stop()
+                
             # Formatação da resposta
             response = st.session_state.agents.format_complete_response(
                 results, interpretation, user_input
@@ -449,8 +590,38 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
             
         except Exception as e:
             st.error(f"❌ Erro no processamento: {str(e)}")
-            if show_debug and 'last_query' in st.session_state:
-                st.code(st.session_state.last_query, language="sql")
+            
+            # Debug detalhado do erro
+            st.subheader("🔍 Detalhes do Erro:")
+            
+            with st.expander("Informações Técnicas", expanded=True):
+                st.write("**Erro:**", str(e))
+                
+                if 'interpretation' in locals():
+                    st.write("**Interpretação gerada:**")
+                    st.json(interpretation)
+                
+                if 'sql_query' in locals():
+                    st.write("**Query SQL gerada:**")
+                    st.code(sql_query, language="sql")
+                    
+                    # Sugerir correções na query
+                    st.write("**💡 Possíveis correções:**")
+                    st.markdown("""
+                    - Verifique se os nomes das colunas existem na tabela
+                    - Confirme o formato das datas (YYYY-MM-DD)
+                    - Teste filtros mais simples primeiro
+                    - Verifique se a tabela tem os dados esperados
+                    """)
+                
+                # Mostrar schema do banco
+                try:
+                    st.write("**📊 Schema do Banco:**")
+                    schema = st.session_state.db.get_database_schema()
+                    st.json(schema)
+                except:
+                    st.write("Não foi possível carregar o schema do banco")
+            
             st.stop()
 
 # Exibição dos resultados
@@ -500,8 +671,11 @@ if 'last_response' in st.session_state:
         </div>
         """, unsafe_allow_html=True)
         
+        # Exibir informações básicas do resultado
+        st.info(f"📊 **{len(response['data'])}** registros encontrados | **{len(response['data'].columns)}** colunas")
+        
         # Container de métricas
-        if len(response["data"].select_dtypes(include=['number']).columns) > 0:
+        if len(response["data"]) > 0 and len(response["data"].select_dtypes(include=['number']).columns) > 0:
             # Métricas rápidas
             if len(response["data"]) > 0:
                 metric_cols = st.columns(3)
@@ -556,6 +730,35 @@ if 'last_response' in st.session_state:
                                 delta=None
                             )
         
+        # Verificar se temos dados para exibir
+        if len(response["data"]) == 0:
+            st.warning("⚠️ Nenhum resultado encontrado para sua consulta.")
+            st.markdown("""
+            **Possíveis motivos:**
+            - Os critérios de filtro são muito restritivos
+            - Os dados solicitados não existem no banco
+            - Problema na formatação da data ou outros campos
+            """)
+            
+            # Mostrar detalhes técnicos automaticamente quando não há resultados
+            with st.expander("🔍 Detalhes da Consulta", expanded=True):
+                st.subheader("Query SQL Executada:")
+                st.code(st.session_state.last_query, language="sql")
+                
+                st.subheader("Interpretação da IA:")
+                st.json(st.session_state.interpretation)
+                
+                # Sugestões de debug
+                st.subheader("💡 Sugestões:")
+                st.markdown("""
+                1. Verifique se os nomes das colunas estão corretos
+                2. Confirme se os dados existem no período solicitado
+                3. Teste uma consulta mais simples primeiro
+                4. Verifique o formato das datas no banco
+                """)
+            
+            st.stop()
+        
         # Detalhes técnicos (se habilitado)
         if show_debug:
             with st.expander("🔍 Detalhes Técnicos", expanded=True):
@@ -564,6 +767,12 @@ if 'last_response' in st.session_state:
                 
                 st.subheader("Query SQL")
                 st.code(st.session_state.last_query, language="sql")
+                
+                st.subheader("Dados Retornados")
+                st.write(f"Linhas: {len(response['data'])}, Colunas: {len(response['data'].columns)}")
+                if len(response["data"]) > 0:
+                    st.write("Primeiras 5 linhas:")
+                    st.dataframe(response["data"].head())
         
         # Abas para diferentes visualizações
         tab1, tab2, tab3 = st.tabs(["📋 Tabela", "📊 Gráfico Matplotlib", "📈 Gráfico Interativo"])

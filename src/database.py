@@ -1,326 +1,323 @@
 import sqlite3
-from sqlite3 import Error
 import pandas as pd
-from typing import Optional, List, Union, Tuple, Dict
-import logging
 from pathlib import Path
+import logging
+from typing import Dict, List, Optional, Union
+
+# Configurar logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class DatabaseManager:
+    """Gerenciador de conexão e operações com banco de dados SQLite."""
+    
     def __init__(self, db_path: str):
         """
-        Inicializa o gerenciador de banco de dados SQLite.
+        Inicializa o gerenciador de banco de dados.
         
         Args:
-            db_path: Caminho para o arquivo do banco de dados
+            db_path (str): Caminho para o arquivo do banco de dados
         """
-        self.db_path = db_path
-        self.conn: Optional[sqlite3.Connection] = None
-        
-        # Configurar logging
-        self.logger = logging.getLogger(__name__)
-        
-        # Validar se o arquivo existe
-        if not Path(db_path).exists():
-            raise FileNotFoundError(f"Arquivo do banco de dados não encontrado: {db_path}")
-        
-        # Validar se o arquivo não está vazio
-        if Path(db_path).stat().st_size == 0:
-            raise ValueError(f"Arquivo do banco de dados está vazio: {db_path}")
+        self.db_path = Path(db_path)
+        self.connection = None
+        self._ensure_db_exists()
+    
+    def _ensure_db_exists(self):
+        """Garante que o arquivo de banco existe."""
+        if not self.db_path.exists():
+            logger.warning(f"Banco de dados não encontrado: {self.db_path}")
+            # Criar diretório se não existir
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
     
     def connect(self) -> bool:
-        """Estabelece conexão com o banco de dados SQLite."""
-        try:
-            # Usar timeout para evitar travamentos
-            self.conn = sqlite3.connect(
-                self.db_path, 
-                timeout=30.0,
-                check_same_thread=False  # Para uso com Streamlit
-            )
-            
-            # Configurações recomendadas para performance e integridade
-            self.conn.execute("PRAGMA foreign_keys = ON")
-            self.conn.execute("PRAGMA journal_mode = WAL")
-            self.conn.execute("PRAGMA synchronous = NORMAL")
-            self.conn.execute("PRAGMA cache_size = 10000")
-            self.conn.execute("PRAGMA temp_store = MEMORY")
-            
-            # Testar a conexão com uma query simples
-            self.conn.execute("SELECT 1").fetchone()
-            
-            self.logger.info("Conexão com banco de dados estabelecida com sucesso")
-            return True
-            
-        except Error as e:
-            error_msg = f"Erro ao conectar ao banco de dados: {e}"
-            self.logger.error(error_msg)
-            print(error_msg)
-            return False
-        except Exception as e:
-            error_msg = f"Erro inesperado na conexão: {e}"
-            self.logger.error(error_msg)
-            print(error_msg)
-            return False
-    
-    def get_table_info(self, table_name: str) -> Dict[str, List]:
         """
-        Obtém informações completas de uma tabela.
+        Estabelece conexão com o banco de dados.
         
         Returns:
-            Dict com 'columns', 'types', 'primary_keys'
+            bool: True se conexão foi estabelecida com sucesso
         """
         try:
-            if not self.conn:
-                raise Error("Conexão não estabelecida")
-            
-            cursor = self.conn.cursor()
-            cursor.execute("PRAGMA table_info(?)", (table_name,))
-            info = cursor.fetchall()
-            
-            if not info:
-                return {"columns": [], "types": [], "primary_keys": []}
-            
-            columns = [col[1] for col in info]  # Nome da coluna
-            types = [col[2] for col in info]    # Tipo da coluna
-            primary_keys = [col[1] for col in info if col[5]]  # Chaves primárias
-            
-            return {
-                "columns": columns,
-                "types": types, 
-                "primary_keys": primary_keys
-            }
-            
-        except Error as e:
-            error_msg = f"Erro ao obter informações da tabela {table_name}: {e}"
-            self.logger.error(error_msg)
-            print(error_msg)
-            return {"columns": [], "types": [], "primary_keys": []}
+            self.connection = sqlite3.connect(
+                str(self.db_path),
+                check_same_thread=False,
+                timeout=30.0
+            )
+            self.connection.row_factory = sqlite3.Row
+            logger.info(f"Conexão estabelecida com {self.db_path}")
+            return True
+        except Exception as e:
+            logger.error(f"Erro ao conectar ao banco: {e}")
+            return False
     
-    def get_table_columns(self, table_name: str) -> List[str]:
-        """Obtém lista de colunas de uma tabela (mantido para compatibilidade)."""
-        return self.get_table_info(table_name)["columns"]
+    def disconnect(self):
+        """Fecha a conexão com o banco de dados."""
+        if self.connection:
+            self.connection.close()
+            self.connection = None
+            logger.info("Conexão fechada")
     
-    def get_all_tables(self) -> List[str]:
-        """Obtém lista de todas as tabelas no banco."""
-        try:
-            if not self.conn:
-                raise Error("Conexão não estabelecida")
-                
-            cursor = self.conn.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-            return [table[0] for table in cursor.fetchall()]
-            
-        except Error as e:
-            error_msg = f"Erro ao obter lista de tabelas: {e}"
-            self.logger.error(error_msg)
-            print(error_msg)
-            return []
+    def __enter__(self):
+        """Context manager entry."""
+        self.connect()
+        return self
     
-    def get_table_count(self, table_name: str) -> int:
-        """Obtém o número de registros em uma tabela."""
-        try:
-            if not self.conn:
-                raise Error("Conexão não estabelecida")
-                
-            cursor = self.conn.cursor()
-            cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
-            return cursor.fetchone()[0]
-            
-        except Error as e:
-            error_msg = f"Erro ao contar registros da tabela {table_name}: {e}"
-            self.logger.error(error_msg)
-            print(error_msg)
-            return 0
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit."""
+        self.disconnect()
     
-    def execute_query(self, query: str, params: Optional[Union[Tuple, Dict]] = None) -> pd.DataFrame:
+    def execute_query(self, query: str, params: tuple = None) -> Optional[pd.DataFrame]:
         """
-        Executa query e retorna DataFrame.
+        Executa uma query SQL e retorna o resultado como DataFrame.
         
         Args:
-            query: String SQL
-            params: Parâmetros (tupla ou dicionário)
+            query (str): Query SQL para executar
+            params (tuple, optional): Parâmetros para a query
+            
+        Returns:
+            pd.DataFrame: Resultado da query ou None se erro
         """
+        if not self.connection:
+            if not self.connect():
+                return None
+        
         try:
-            if not self.conn:
-                raise Error("Conexão não estabelecida")
+            logger.info(f"Executando query: {query[:100]}...")
             
-            # Log da query para debug (sem parâmetros sensíveis)
-            self.logger.debug(f"Executando query: {query[:100]}...")
+            if params:
+                result = pd.read_sql_query(query, self.connection, params=params)
+            else:
+                result = pd.read_sql_query(query, self.connection)
             
-            # Executar query com timeout implícito
-            result = pd.read_sql_query(query, self.conn, params=params)
-            
-            self.logger.info(f"Query executada com sucesso. Retornadas {len(result)} linhas")
+            logger.info(f"Query executada com sucesso. Resultados: {len(result)} linhas")
             return result
             
-        except pd.io.sql.DatabaseError as e:
-            error_msg = f"Erro de banco na query: {e}\nQuery: {query}"
-            self.logger.error(error_msg)
-            print(error_msg)
-            return pd.DataFrame()
-        except Error as e:
-            error_msg = f"Erro SQLite na query: {e}\nQuery: {query}"
-            self.logger.error(error_msg)
-            print(error_msg)
-            return pd.DataFrame()
         except Exception as e:
-            error_msg = f"Erro inesperado na query: {e}\nQuery: {query}"
-            self.logger.error(error_msg)
-            print(error_msg)
-            return pd.DataFrame()
+            logger.error(f"Erro ao executar query: {e}")
+            logger.error(f"Query: {query}")
+            return None
     
-    def validate_query(self, query: str) -> Tuple[bool, str]:
+    def get_database_schema(self) -> Dict:
         """
-        Valida uma query SQL sem executá-la.
+        Obtém o schema completo do banco de dados.
         
         Returns:
-            Tuple[bool, str]: (é_válida, mensagem_erro)
+            Dict: Dicionário com informações das tabelas
         """
+        if not self.connection:
+            if not self.connect():
+                return {}
+        
         try:
-            if not self.conn:
-                return False, "Conexão não estabelecida"
+            schema = {}
             
-            # Usar EXPLAIN para validar a query sem executar
-            cursor = self.conn.cursor()
-            cursor.execute(f"EXPLAIN {query}")
-            return True, "Query válida"
+            # Obter lista de tabelas
+            tables_query = """
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name NOT LIKE 'sqlite_%'
+                ORDER BY name
+            """
+            tables_df = self.execute_query(tables_query)
             
-        except Error as e:
-            return False, f"Query inválida: {e}"
-        except Exception as e:
-            return False, f"Erro na validação: {e}"
-    
-    def table_exists(self, table_name: str) -> bool:
-        """Verifica se uma tabela existe no banco."""
-        try:
-            if not self.conn:
-                raise Error("Conexão não estabelecida")
+            if tables_df is None or len(tables_df) == 0:
+                return {}
+            
+            for _, row in tables_df.iterrows():
+                table_name = row['name']
                 
-            cursor = self.conn.cursor()
-            cursor.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-                (table_name,)
-            )
-            exists = cursor.fetchone() is not None
+                # Obter informações da tabela
+                table_info_query = f"PRAGMA table_info({table_name})"
+                table_info_df = self.execute_query(table_info_query)
+                
+                # Obter contagem de registros
+                count_query = f"SELECT COUNT(*) as count FROM {table_name}"
+                count_df = self.execute_query(count_query)
+                
+                columns = []
+                types = []
+                
+                if table_info_df is not None:
+                    columns = table_info_df['name'].tolist()
+                    types = table_info_df['type'].tolist()
+                
+                record_count = 0
+                if count_df is not None and len(count_df) > 0:
+                    record_count = count_df.iloc[0]['count']
+                
+                schema[table_name] = {
+                    'columns': columns,
+                    'types': types,
+                    'count': record_count
+                }
             
-            self.logger.debug(f"Tabela {table_name} {'existe' if exists else 'não existe'}")
-            return exists
+            return schema
             
-        except Error as e:
-            error_msg = f"Erro ao verificar tabela {table_name}: {e}"
-            self.logger.error(error_msg)
-            print(error_msg)
-            return False
+        except Exception as e:
+            logger.error(f"Erro ao obter schema: {e}")
+            return {}
     
-    def get_database_schema(self) -> Dict[str, Dict]:
+    def get_all_tables(self) -> List[str]:
         """
-        Retorna o schema completo do banco de dados.
+        Obtém lista de todas as tabelas no banco.
         
         Returns:
-            Dict com informações de todas as tabelas
+            List[str]: Lista com nomes das tabelas
         """
-        schema = {}
-        tables = self.get_all_tables()
-        
-        for table in tables:
-            schema[table] = {
-                **self.get_table_info(table),
-                "count": self.get_table_count(table)
-            }
-        
-        return schema
+        try:
+            query = """
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name NOT LIKE 'sqlite_%'
+                ORDER BY name
+            """
+            result = self.execute_query(query)
+            
+            if result is not None and len(result) > 0:
+                return result['name'].tolist()
+            else:
+                return []
+                
+        except Exception as e:
+            logger.error(f"Erro ao obter tabelas: {e}")
+            return []
     
-    def health_check(self) -> Dict[str, Union[bool, int, str]]:
+    def health_check(self) -> Dict:
         """
         Verifica a saúde do banco de dados.
         
         Returns:
-            Dict com status do banco
+            Dict: Status do banco de dados
         """
-        health = {
-            "connected": False,
-            "tables_count": 0,
-            "total_records": 0,
-            "errors": []
+        health_status = {
+            'connected': False,
+            'tables_count': 0,
+            'total_records': 0,
+            'errors': []
         }
         
         try:
-            if not self.conn:
-                health["errors"].append("Conexão não estabelecida")
-                return health
+            # Verificar conexão
+            if not self.connection:
+                if not self.connect():
+                    health_status['errors'].append("Falha na conexão")
+                    return health_status
             
-            health["connected"] = True
+            health_status['connected'] = True
             
-            # Contar tabelas
+            # Obter tabelas
             tables = self.get_all_tables()
-            health["tables_count"] = len(tables)
+            health_status['tables_count'] = len(tables)
             
             # Contar registros totais
             total_records = 0
             for table in tables:
-                count = self.get_table_count(table)
-                total_records += count
-                
-                if count == 0:
-                    health["errors"].append(f"Tabela {table} está vazia")
+                try:
+                    count_query = f"SELECT COUNT(*) as count FROM {table}"
+                    result = self.execute_query(count_query)
+                    if result is not None and len(result) > 0:
+                        total_records += result.iloc[0]['count']
+                except Exception as e:
+                    health_status['errors'].append(f"Erro na tabela {table}: {e}")
             
-            health["total_records"] = total_records
-            
-            if total_records == 0:
-                health["errors"].append("Nenhum registro encontrado no banco")
+            health_status['total_records'] = total_records
             
         except Exception as e:
-            health["errors"].append(f"Erro no health check: {e}")
+            health_status['errors'].append(f"Erro geral: {e}")
         
-        return health
+        return health_status
     
-    def close(self) -> None:
-        """Fecha a conexão com o banco de dados."""
-        if self.conn:
-            try:
-                self.conn.close()
-                self.logger.info("Conexão com banco de dados fechada")
-            except Error as e:
-                error_msg = f"Erro ao fechar conexão: {e}"
-                self.logger.error(error_msg)
-                print(error_msg)
-            finally:
-                self.conn = None
-    
-    def __enter__(self):
-        """Suporte para uso com 'with' statement."""
-        if not self.connect():
-            raise ConnectionError("Falha ao estabelecer conexão com o banco")
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Garante que a conexão será fechada."""
-        self.close()
-    
-    def __del__(self):
-        """Destructor para garantir fechamento da conexão."""
-        self.close()
-
-# Exemplo de uso com diagnóstico
-def test_database_manager(db_path: str):
-    """Função de teste para o DatabaseManager."""
-    try:
-        with DatabaseManager(db_path) as db:
-            # Health check
-            health = db.health_check()
-            print("=== HEALTH CHECK ===")
-            for key, value in health.items():
-                print(f"{key}: {value}")
+    def execute_raw_query(self, query: str, params: tuple = None) -> Optional[List[Dict]]:
+        """
+        Executa uma query e retorna resultado como lista de dicionários.
+        
+        Args:
+            query (str): Query SQL
+            params (tuple, optional): Parâmetros
             
-            # Schema
-            schema = db.get_database_schema()
-            print("\n=== SCHEMA ===")
-            for table, info in schema.items():
-                print(f"\n{table}:")
-                print(f"  Colunas: {info['columns']}")
-                print(f"  Registros: {info['count']}")
+        Returns:
+            List[Dict]: Resultado da query
+        """
+        if not self.connection:
+            if not self.connect():
+                return None
+        
+        try:
+            cursor = self.connection.cursor()
             
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+            
+            # Converter resultado para lista de dicionários
+            columns = [description[0] for description in cursor.description]
+            rows = cursor.fetchall()
+            
+            result = []
+            for row in rows:
+                result.append(dict(zip(columns, row)))
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Erro ao executar query raw: {e}")
+            return None
+    
+    def insert_data(self, table_name: str, data: Union[Dict, pd.DataFrame]) -> bool:
+        """
+        Insere dados em uma tabela.
+        
+        Args:
+            table_name (str): Nome da tabela
+            data (Dict ou DataFrame): Dados para inserir
+            
+        Returns:
+            bool: True se inserção foi bem-sucedida
+        """
+        if not self.connection:
+            if not self.connect():
+                return False
+        
+        try:
+            if isinstance(data, dict):
+                # Inserir um registro
+                columns = ', '.join(data.keys())
+                placeholders = ', '.join(['?' for _ in data])
+                query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+                
+                cursor = self.connection.cursor()
+                cursor.execute(query, tuple(data.values()))
+                self.connection.commit()
+                
+            elif isinstance(data, pd.DataFrame):
+                # Inserir DataFrame
+                data.to_sql(table_name, self.connection, if_exists='append', index=False)
+            
+            logger.info(f"Dados inseridos na tabela {table_name}")
             return True
             
-    except Exception as e:
-        print(f"Erro no teste: {e}")
-        return False
+        except Exception as e:
+            logger.error(f"Erro ao inserir dados: {e}")
+            return False
+    
+    def create_table_from_dataframe(self, table_name: str, df: pd.DataFrame) -> bool:
+        """
+        Cria uma tabela baseada na estrutura de um DataFrame.
+        
+        Args:
+            table_name (str): Nome da tabela
+            df (pd.DataFrame): DataFrame com estrutura desejada
+            
+        Returns:
+            bool: True se tabela foi criada
+        """
+        if not self.connection:
+            if not self.connect():
+                return False
+        
+        try:
+            df.to_sql(table_name, self.connection, if_exists='replace', index=False)
+            logger.info(f"Tabela {table_name} criada com sucesso")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Erro ao criar tabela: {e}")
+            return False
