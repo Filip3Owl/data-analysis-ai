@@ -45,11 +45,12 @@ st.markdown("""
     }
     
     .insight-box {
-        background: #f8f9fa;
+        background: #f0f8ff;
         padding: 1rem;
         border-radius: 8px;
         border-left: 4px solid #28a745;
         margin: 1rem 0;
+        color: #2c3e50;
     }
     
     .error-box {
@@ -58,6 +59,7 @@ st.markdown("""
         border-radius: 8px;
         border-left: 4px solid #e53e3e;
         margin: 1rem 0;
+        color: #721c24;
     }
     
     .table-container {
@@ -65,6 +67,14 @@ st.markdown("""
         overflow-y: auto;
         border: 1px solid #dee2e6;
         border-radius: 8px;
+    }
+    
+    .schema-info {
+        background: #f8f9fa;
+        padding: 0.5rem;
+        border-radius: 4px;
+        margin: 0.25rem 0;
+        font-size: 0.85rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -162,17 +172,36 @@ with st.sidebar:
     
     st.divider()
     
-    # Informações do banco
+    # Informações do banco - CORRIGIDO
     st.subheader("📊 Informações do Banco")
     try:
         schema = st.session_state.db.get_database_schema()
-        for table, info in schema.items():
-            with st.expander(f"📋 {table} ({info['count']:,} registros)"):
-                st.write("**Colunas:**")
-                for col in info['columns']:
-                    st.write(f"• {col}")
+        
+        if not schema:
+            st.warning("⚠️ Nenhuma tabela encontrada")
+        else:
+            for table_name, table_info in schema.items():
+                with st.expander(f"📋 {table_name} ({table_info.get('count', 0):,} registros)"):
+                    st.write("**Colunas:**")
+                    columns = table_info.get('columns', [])
+                    types = table_info.get('types', [])
+                    
+                    if columns:
+                        for i, col in enumerate(columns):
+                            col_type = types[i] if i < len(types) else "N/A"
+                            st.markdown(f"<div class='schema-info'>• <strong>{col}</strong> ({col_type})</div>", 
+                                      unsafe_allow_html=True)
+                    else:
+                        st.write("Nenhuma coluna encontrada")
+                        
     except Exception as e:
         st.error(f"Erro ao carregar schema: {e}")
+        st.write("Tentando diagnóstico alternativo...")
+        try:
+            tables = st.session_state.db.get_all_tables()
+            st.write(f"Tabelas encontradas: {tables}")
+        except Exception as e2:
+            st.error(f"Erro adicional: {e2}")
     
     st.divider()
     
@@ -218,6 +247,30 @@ with st.expander("⚙️ Opções Avançadas"):
             "📈 Tipo de gráfico preferido",
             ["Automático", "Barras", "Pizza", "Linha", "Scatter", "Apenas Tabela"]
         )
+
+# Função para identificar colunas relevantes para métricas
+def get_relevant_metric_columns(df):
+    """Identifica colunas numéricas relevantes para métricas, excluindo IDs e outros campos irrelevantes."""
+    if df.empty:
+        return []
+    
+    # Colunas numéricas
+    numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+    
+    # Filtrar colunas irrelevantes
+    irrelevant_patterns = ['id', 'idade', 'ano', 'mes', 'dia', '_id']
+    relevant_cols = []
+    
+    for col in numeric_cols:
+        col_lower = col.lower()
+        # Verificar se não contém padrões irrelevantes
+        if not any(pattern in col_lower for pattern in irrelevant_patterns):
+            relevant_cols.append(col)
+        # Incluir se contém padrões relevantes (valores monetários, quantidades)
+        elif any(pattern in col_lower for pattern in ['valor', 'preco', 'total', 'vendas', 'quantidade', 'count']):
+            relevant_cols.append(col)
+    
+    return relevant_cols
 
 # Botão de análise
 if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured):
@@ -286,14 +339,14 @@ if 'last_response' in st.session_state:
         with col1:
             st.header("📊 Resultados da Análise")
             
-            # Resumo textual
-            st.markdown("""
+            # Resumo textual - CORRIGIDO
+            st.markdown(f"""
             <div class="insight-box">
-            """ + response["summary"] + """
+            {response["summary"]}
             </div>
             """, unsafe_allow_html=True)
             
-            # Métricas rápidas
+            # Métricas rápidas - CORRIGIDO
             if len(response["data"]) > 0:
                 metric_cols = st.columns(3)
                 
@@ -304,24 +357,48 @@ if 'last_response' in st.session_state:
                         delta=None
                     )
                 
-                with metric_cols[1]:
-                    numeric_cols = response["data"].select_dtypes(include=['number']).columns
-                    if len(numeric_cols) > 0:
-                        total_value = response["data"][numeric_cols[0]].sum()
-                        st.metric(
-                            f"💰 Total {numeric_cols[0].replace('_', ' ').title()}",
-                            f"{total_value:,.2f}",
-                            delta=None
-                        )
+                # Obter colunas relevantes para métricas
+                relevant_cols = get_relevant_metric_columns(response["data"])
                 
-                with metric_cols[2]:
-                    if len(numeric_cols) > 0:
-                        avg_value = response["data"][numeric_cols[0]].mean()
-                        st.metric(
-                            f"📊 Média {numeric_cols[0].replace('_', ' ').title()}",
-                            f"{avg_value:,.2f}",
-                            delta=None
-                        )
+                if len(relevant_cols) >= 1:
+                    with metric_cols[1]:
+                        col_name = relevant_cols[0]
+                        total_value = response["data"][col_name].sum()
+                        display_name = col_name.replace('_', ' ').title()
+                        
+                        # Formatação especial para valores monetários
+                        if 'valor' in col_name.lower() or 'preco' in col_name.lower():
+                            st.metric(
+                                f"💰 Total {display_name}",
+                                f"R$ {total_value:,.2f}",
+                                delta=None
+                            )
+                        else:
+                            st.metric(
+                                f"📊 Total {display_name}",
+                                f"{total_value:,.0f}",
+                                delta=None
+                            )
+                
+                if len(relevant_cols) >= 1:
+                    with metric_cols[2]:
+                        col_name = relevant_cols[0]
+                        avg_value = response["data"][col_name].mean()
+                        display_name = col_name.replace('_', ' ').title()
+                        
+                        # Formatação especial para valores monetários
+                        if 'valor' in col_name.lower() or 'preco' in col_name.lower():
+                            st.metric(
+                                f"📊 Média {display_name}",
+                                f"R$ {avg_value:,.2f}",
+                                delta=None
+                            )
+                        else:
+                            st.metric(
+                                f"📊 Média {display_name}",
+                                f"{avg_value:,.2f}",
+                                delta=None
+                            )
         
         with col2:
             # Detalhes técnicos (se habilitado)
@@ -351,8 +428,11 @@ if 'last_response' in st.session_state:
             for col in formatted_df.select_dtypes(include=['number']).columns:
                 if 'valor' in col.lower() or 'preco' in col.lower():
                     formatted_df[col] = formatted_df[col].apply(lambda x: f"R$ {x:,.2f}")
-                elif 'count' not in col.lower():
+                elif 'count' in col.lower() or col.lower().endswith('_count'):
                     formatted_df[col] = formatted_df[col].apply(lambda x: f"{x:,.0f}")
+                elif not any(pattern in col.lower() for pattern in ['id', 'idade']):
+                    # Aplicar formatação numérica apenas para colunas relevantes
+                    formatted_df[col] = formatted_df[col].apply(lambda x: f"{x:,.2f}" if x != int(x) else f"{x:,.0f}")
             
             st.dataframe(
                 formatted_df,
@@ -403,9 +483,10 @@ if 'last_response' in st.session_state:
                     st.info("🔍 Dados insuficientes para gráfico")
     
     else:
-        st.markdown("""
+        # Erro na resposta - CORRIGIDO
+        st.markdown(f"""
         <div class="error-box">
-        """ + response["summary"] + """
+        {response["summary"]}
         </div>
         """, unsafe_allow_html=True)
 
