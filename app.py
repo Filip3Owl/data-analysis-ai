@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS customizado para melhor aparência
+# CSS customizado para melhor aparência.
 st.markdown("""
 <style>
     .main-header {
