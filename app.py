@@ -2,14 +2,14 @@ import sys
 import os
 from pathlib import Path
 import streamlit as st
-from src.agents import AgentsManager
+from src.agents import AgentsManager  # Usar o AgentsManager melhorado
 from src.database import DatabaseManager
-from src.utils import generate_visualization, detect_chart_type
 from langchain.llms import OpenAI
 from dotenv import load_dotenv
 import pandas as pd
 import json
-import sqlite3
+import plotly.express as px
+import matplotlib.pyplot as plt
 
 # Configuração de caminhos
 PROJECT_ROOT = Path(__file__).parent.resolve()
@@ -17,250 +17,407 @@ sys.path.append(str(PROJECT_ROOT))
 
 # Configuração inicial
 load_dotenv()
-st.set_page_config(page_title="Analytics com IA", layout="wide")
-st.title("📊 Analytics com IA")
+st.set_page_config(
+    page_title="Analytics com IA - Completo", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# CSS customizado para melhor aparência
+st.markdown("""
+<style>
+    .main-header {
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        padding: 1rem;
+        border-radius: 10px;
+        color: white;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .metric-card {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #667eea;
+    }
+    
+    .insight-box {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #28a745;
+        margin: 1rem 0;
+    }
+    
+    .error-box {
+        background: #fff5f5;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #e53e3e;
+        margin: 1rem 0;
+    }
+    
+    .table-container {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Cabeçalho principal
+st.markdown("""
+<div class="main-header">
+    <h1>📊 Analytics com IA - Versão Completa</h1>
+    <p>Análise inteligente com tabelas, resumos e visualizações interativas</p>
+</div>
+""", unsafe_allow_html=True)
 
 # Verificação do banco de dados
 DB_PATH = PROJECT_ROOT / 'data' / 'clientes_completo.db'
 
-# DIAGNÓSTICO DETALHADO DO BANCO
-def diagnose_database():
-    st.header("🔧 Diagnóstico Completo do Banco de Dados")
+# Função de diagnóstico rápido
+@st.cache_data
+def quick_database_check():
+    """Verificação rápida do banco de dados com cache."""
+    if not DB_PATH.exists():
+        return False, f"Arquivo não encontrado: {DB_PATH}"
     
-    # 1. Verificar se o arquivo existe
-    st.subheader("1. Verificação do Arquivo")
-    if DB_PATH.exists():
-        st.success(f"✅ Arquivo encontrado: {DB_PATH}")
-        file_size = DB_PATH.stat().st_size
-        st.info(f"Tamanho do arquivo: {file_size:,} bytes")
-        
-        if file_size == 0:
-            st.error("❌ PROBLEMA: Arquivo está vazio!")
-            return False
-    else:
-        st.error(f"❌ Arquivo não encontrado em: {DB_PATH}")
-        
-        # Listar arquivos no diretório data
-        data_dir = PROJECT_ROOT / 'data'
-        if data_dir.exists():
-            st.info("Arquivos encontrados no diretório 'data':")
-            for file in data_dir.iterdir():
-                st.write(f"- {file.name} ({file.stat().st_size:,} bytes)")
-        else:
-            st.error("Diretório 'data' não existe!")
-        return False
+    if DB_PATH.stat().st_size == 0:
+        return False, "Arquivo do banco está vazio"
     
-    # 2. Testar conexão direta com SQLite
-    st.subheader("2. Teste de Conexão Direta")
     try:
-        conn = sqlite3.connect(str(DB_PATH))
-        cursor = conn.cursor()
-        
-        # Listar todas as tabelas
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        tables = cursor.fetchall()
-        
-        if tables:
-            st.success(f"✅ Conexão estabelecida! Encontradas {len(tables)} tabelas:")
-            for table in tables:
-                st.write(f"- {table[0]}")
-        else:
-            st.error("❌ Nenhuma tabela encontrada no banco!")
-            conn.close()
-            return False
-        
-        # 3. Verificar conteúdo de cada tabela
-        st.subheader("3. Verificação do Conteúdo das Tabelas")
-        for table in tables:
-            table_name = table[0]
-            st.write(f"**Tabela: {table_name}**")
-            
-            # Contar registros
-            cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
-            count = cursor.fetchone()[0]
-            st.write(f"Registros: {count:,}")
-            
-            if count > 0:
-                # Mostrar estrutura da tabela
-                cursor.execute(f"PRAGMA table_info({table_name})")
-                columns = cursor.fetchall()
-                st.write("Colunas:")
-                for col in columns:
-                    st.write(f"  - {col[1]} ({col[2]})")
-                
-                # Mostrar alguns dados
-                cursor.execute(f"SELECT * FROM {table_name} LIMIT 3")
-                sample_data = cursor.fetchall()
-                if sample_data:
-                    df_sample = pd.DataFrame(sample_data, columns=[col[1] for col in columns])
-                    st.dataframe(df_sample)
-            else:
-                st.warning(f"⚠️ Tabela {table_name} está vazia!")
-            
-            st.divider()
-        
-        conn.close()
-        return True
-        
+        with DatabaseManager(str(DB_PATH)) as db:
+            health = db.health_check()
+            if not health["connected"]:
+                return False, "Falha na conexão"
+            if health["total_records"] == 0:
+                return False, "Banco sem dados"
+            return True, f"✅ {health['tables_count']} tabelas, {health['total_records']:,} registros"
     except Exception as e:
-        st.error(f"❌ Erro na conexão direta: {str(e)}")
-        return False
+        return False, f"Erro: {str(e)}"
 
-# 4. Testar DatabaseManager
-def test_database_manager():
-    st.subheader("4. Teste do DatabaseManager")
-    try:
-        db = DatabaseManager(str(DB_PATH))
-        if db.connect():
-            st.success("✅ DatabaseManager conectou com sucesso!")
-            
-            # Testar queries básicas
-            test_queries = {
-                "Clientes": "SELECT COUNT(*) as total FROM clientes",
-                "Compras": "SELECT COUNT(*) as total FROM compras", 
-                "Suporte": "SELECT COUNT(*) as total FROM suporte",
-                "Campanhas": "SELECT COUNT(*) as total FROM campanhas_marketing"
-            }
-            
-            for nome, query in test_queries.items():
-                try:
-                    df = db.execute_query(query)
-                    if not df.empty:
-                        total = df.iloc[0, 0]
-                        st.success(f"✅ {nome}: {total:,} registros")
-                    else:
-                        st.error(f"❌ {nome}: Query retornou vazio")
-                except Exception as e:
-                    st.error(f"❌ {nome}: Erro na query - {str(e)}")
-            
-            return db
-        else:
-            st.error("❌ DatabaseManager falhou ao conectar!")
-            return None
-            
-    except Exception as e:
-        st.error(f"❌ Erro no DatabaseManager: {str(e)}")
-        return None
+# Verificar banco
+db_ok, db_message = quick_database_check()
 
-# EXECUTAR DIAGNÓSTICO
-if st.button("🔍 Executar Diagnóstico Completo"):
-    with st.spinner("Diagnosticando banco de dados..."):
-        db_ok = diagnose_database()
-        
-        if db_ok:
-            test_db = test_database_manager()
-            if test_db:
-                st.session_state.db = test_db
-                st.success("🎉 Banco de dados funcionando corretamente!")
-            else:
-                st.error("❌ Problema no DatabaseManager")
-        else:
-            st.error("❌ Problemas no banco de dados detectados")
-
-# RESTO DO CÓDIGO ORIGINAL (apenas se o diagnóstico passou)
-if "db" in st.session_state:
+if not db_ok:
+    st.error(f"❌ **Problema no banco de dados**: {db_message}")
     
-    # Sidebar - Configurações
-    with st.sidebar:
-        st.header("Configurações")
-        
-        openai_key = os.getenv("OPENAI_API_KEY", "")
-        key_input = st.text_input(
-            "Chave da OpenAI",
-            type="password",
-            value=openai_key,
-            help="Insira sua chave da OpenAI (começa com 'sk-')"
-        )
-        openai_key = key_input or openai_key
-        
-        if openai_key:
-            if openai_key.startswith('sk-'):
-                st.success("✅ Chave válida detectada")
-            else:
-                st.error("❌ Formato inválido - deve começar com 'sk-'")
-        else:
-            st.warning("⚠️ Insira uma chave da OpenAI")
-
-        st.markdown("""
-        ### Exemplos de consultas:
-        - "Liste os 5 estados com mais clientes"
-        - "Mostre vendas por categoria como gráfico"
-        - "Qual o ticket médio por canal?"
-        """)
-
-    # Inicialização do LLM
-    try:
-        if "llm" not in st.session_state and openai_key.startswith('sk-'):
-            st.session_state.llm = OpenAI(
-                openai_api_key=openai_key,
-                temperature=0.3,
-                max_tokens=1500,
-                model="gpt-3.5-turbo-instruct"
-            )
-            st.session_state.agents = AgentsManager(st.session_state.llm, st.session_state.db)
-    except Exception as e:
-        st.error(f"Erro ao inicializar IA: {str(e)}")
-
-    # Interface principal
-    user_input = st.text_area("Faça sua pergunta sobre os dados:", height=100)
-
-    if st.button("Analisar") and user_input:
-        if not openai_key.startswith('sk-'):
-            st.error("Configure uma chave válida da OpenAI")
-            st.stop()
-        
-        if "agents" not in st.session_state:
-            st.error("Sistema de IA não inicializado")
-            st.stop()
-
-        with st.spinner("Processando sua solicitação..."):
+    with st.expander("🔧 Diagnóstico Detalhado"):
+        st.write("Execute o diagnóstico para identificar problemas específicos:")
+        if st.button("Executar Diagnóstico"):
             try:
-                # Container para resultados
-                main_col, debug_col = st.columns([3, 1])
-                
-                with main_col:
-                    interpretation = st.session_state.agents.interpret_request(user_input)
-                    st.session_state.interpretation = interpretation
-                    
-                    sql_query = st.session_state.agents.generate_sql(interpretation)
-                    st.session_state.sql_query = sql_query
-                    
-                    results = st.session_state.db.execute_query(sql_query)
-                    st.session_state.results = results
-                    
-                    if not results.empty:
-                        response = st.session_state.agents.format_response(
-                            results.to_json(orient='records', force_ascii=False), 
-                            user_input
-                        )
-                        st.markdown(response)
-                        
-                        chart_type = detect_chart_type(user_input)
-                        if chart_type != "text":
-                            fig = generate_visualization(results, chart_type)
-                            if fig:
-                                st.pyplot(fig)
-                    else:
-                        st.warning("Nenhum resultado encontrado. Verifique:")
-                        st.markdown("""
-                        - Os filtros podem estar muito restritivos
-                        - A tabela pode estar vazia
-                        - Os nomes das colunas podem ser diferentes
-                        """)
-                
-                with debug_col.expander("💻 Detalhes técnicos"):
-                    st.json(interpretation)
-                    st.code(sql_query, language="sql")
-                    st.dataframe(results.head(3) if not results.empty else pd.DataFrame())
-
+                with DatabaseManager(str(DB_PATH)) as db:
+                    schema = db.get_database_schema()
+                    st.json(schema)
             except Exception as e:
-                st.error(f"Erro: {str(e)}")
-                if "sql_query" in st.session_state:
-                    st.code(st.session_state.sql_query, language="sql")
-
+                st.error(f"Erro no diagnóstico: {e}")
+    
+    st.stop()
 else:
-    st.warning("⚠️ Execute o diagnóstico primeiro para verificar o banco de dados!")
+    st.success(db_message)
+
+# Inicialização do sistema
+try:
+    if "db" not in st.session_state:
+        st.session_state.db = DatabaseManager(str(DB_PATH))
+        if not st.session_state.db.connect():
+            st.error("Falha ao conectar ao banco de dados")
+            st.stop()
+
+except Exception as e:
+    st.error(f"Erro na inicialização: {str(e)}")
+    st.stop()
+
+# Sidebar - Configurações
+with st.sidebar:
+    st.header("⚙️ Configurações")
+    
+    # Configuração da API
+    openai_key = os.getenv("OPENAI_API_KEY", "")
+    key_input = st.text_input(
+        "🔑 Chave OpenAI",
+        type="password",
+        value=openai_key,
+        help="Insira sua chave da OpenAI (sk-...)",
+        placeholder="sk-..."
+    )
+    openai_key = key_input or openai_key
+    
+    # Status da chave
+    if openai_key:
+        if openai_key.startswith('sk-') and len(openai_key) > 20:
+            st.success("✅ Chave válida")
+            api_configured = True
+        else:
+            st.error("❌ Chave inválida")
+            api_configured = False
+    else:
+        st.warning("⚠️ Configure sua chave OpenAI")
+        api_configured = False
+    
+    st.divider()
+    
+    # Informações do banco
+    st.subheader("📊 Informações do Banco")
+    try:
+        schema = st.session_state.db.get_database_schema()
+        for table, info in schema.items():
+            with st.expander(f"📋 {table} ({info['count']:,} registros)"):
+                st.write("**Colunas:**")
+                for col in info['columns']:
+                    st.write(f"• {col}")
+    except Exception as e:
+        st.error(f"Erro ao carregar schema: {e}")
+    
+    st.divider()
+    
+    # Exemplos de consultas
+    st.subheader("💡 Exemplos de Consultas")
+    exemplos = [
+        "Top 10 estados com mais clientes",
+        "Vendas por categoria em 2024",
+        "Evolução mensal de vendas",
+        "Clientes que mais compraram", 
+        "Distribuição por canal de venda",
+        "Suporte por tipo de contato",
+        "Efetividade das campanhas",
+        "Ticket médio por região"
+    ]
+    
+    for exemplo in exemplos:
+        if st.button(f"📝 {exemplo}", key=f"ex_{exemplo}"):
+            st.session_state.exemplo_selecionado = exemplo
+
+# Interface principal
+st.header("🎯 Faça sua Análise")
+
+# Campo de entrada com exemplo selecionado
+pergunta_default = st.session_state.get('exemplo_selecionado', '')
+user_input = st.text_area(
+    "💬 Descreva o que você quer analisar:",
+    value=pergunta_default,
+    height=100,
+    placeholder="Ex: Mostre o ranking dos 5 estados com mais vendas em 2024"
+)
+
+# Opções avançadas
+with st.expander("⚙️ Opções Avançadas"):
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        show_debug = st.checkbox("🔍 Mostrar detalhes técnicos", value=False)
+        auto_chart = st.checkbox("📊 Gerar gráfico automaticamente", value=True)
+    
+    with col2:
+        chart_type = st.selectbox(
+            "📈 Tipo de gráfico preferido",
+            ["Automático", "Barras", "Pizza", "Linha", "Scatter", "Apenas Tabela"]
+        )
+
+# Botão de análise
+if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured):
+    if not user_input.strip():
+        st.warning("⚠️ Por favor, descreva sua análise!")
+        st.stop()
+    
+    # Limpar exemplo selecionado
+    if 'exemplo_selecionado' in st.session_state:
+        del st.session_state.exemplo_selecionado
+    
+    # Inicializar LLM e Agents
+    try:
+        if "llm" not in st.session_state or "agents" not in st.session_state:
+            with st.spinner("🔧 Inicializando IA..."):
+                st.session_state.llm = OpenAI(
+                    openai_api_key=openai_key,
+                    temperature=0.3,
+                    max_tokens=2000,
+                    model="gpt-3.5-turbo-instruct"
+                )
+                st.session_state.agents = AgentsManager(
+                    st.session_state.llm, 
+                    st.session_state.db
+                )
+    except Exception as e:
+        st.error(f"❌ Erro ao inicializar IA: {e}")
+        st.stop()
+
+    # Processamento da análise
+    with st.spinner("🔄 Processando sua solicitação..."):
+        try:
+            # 1. Interpretação
+            interpretation = st.session_state.agents.interpret_request(user_input)
+            
+            # 2. Geração SQL
+            sql_query = st.session_state.agents.generate_sql(interpretation)
+            
+            # 3. Execução da query
+            results = st.session_state.db.execute_query(sql_query)
+            
+            # 4. Formatação completa da resposta
+            response = st.session_state.agents.format_complete_response(
+                results, interpretation, user_input
+            )
+            
+            # Armazenar resultados na sessão
+            st.session_state.last_response = response
+            st.session_state.last_query = sql_query
+            st.session_state.last_interpretation = interpretation
+            
+        except Exception as e:
+            st.error(f"❌ Erro no processamento: {str(e)}")
+            if show_debug and 'last_query' in st.session_state:
+                st.code(st.session_state.last_query, language="sql")
+            st.stop()
+
+# Exibição dos resultados
+if 'last_response' in st.session_state:
+    response = st.session_state.last_response
+    
+    if response["success"]:
+        # Layout em colunas
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.header("📊 Resultados da Análise")
+            
+            # Resumo textual
+            st.markdown("""
+            <div class="insight-box">
+            """ + response["summary"] + """
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Métricas rápidas
+            if len(response["data"]) > 0:
+                metric_cols = st.columns(3)
+                
+                with metric_cols[0]:
+                    st.metric(
+                        "📋 Total de Registros",
+                        f"{response['total_records']:,}",
+                        delta=None
+                    )
+                
+                with metric_cols[1]:
+                    numeric_cols = response["data"].select_dtypes(include=['number']).columns
+                    if len(numeric_cols) > 0:
+                        total_value = response["data"][numeric_cols[0]].sum()
+                        st.metric(
+                            f"💰 Total {numeric_cols[0].replace('_', ' ').title()}",
+                            f"{total_value:,.2f}",
+                            delta=None
+                        )
+                
+                with metric_cols[2]:
+                    if len(numeric_cols) > 0:
+                        avg_value = response["data"][numeric_cols[0]].mean()
+                        st.metric(
+                            f"📊 Média {numeric_cols[0].replace('_', ' ').title()}",
+                            f"{avg_value:,.2f}",
+                            delta=None
+                        )
+        
+        with col2:
+            # Detalhes técnicos (se habilitado)
+            if show_debug:
+                with st.expander("🔍 Detalhes Técnicos", expanded=True):
+                    st.subheader("Interpretação")
+                    st.json(st.session_state.last_interpretation)
+                    
+                    st.subheader("Query SQL")
+                    st.code(st.session_state.last_query, language="sql")
+        
+        # Abas para diferentes visualizações
+        tab1, tab2, tab3 = st.tabs(["📋 Tabela", "📊 Gráfico Matplotlib", "📈 Gráfico Interativo"])
+        
+        with tab1:
+            st.subheader("📋 Dados Tabulares")
+            
+            # Tabela com paginação
+            if len(response["data"]) > 50:
+                st.warning(f"⚠️ Mostrando 50 de {len(response['data'])} registros")
+                display_df = response["data"].head(50)
+            else:
+                display_df = response["data"]
+            
+            # Formatação especial para valores monetários
+            formatted_df = display_df.copy()
+            for col in formatted_df.select_dtypes(include=['number']).columns:
+                if 'valor' in col.lower() or 'preco' in col.lower():
+                    formatted_df[col] = formatted_df[col].apply(lambda x: f"R$ {x:,.2f}")
+                elif 'count' not in col.lower():
+                    formatted_df[col] = formatted_df[col].apply(lambda x: f"{x:,.0f}")
+            
+            st.dataframe(
+                formatted_df,
+                use_container_width=True,
+                height=400
+            )
+            
+            # Download dos dados
+            csv = response["data"].to_csv(index=False)
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv,
+                file_name=f"analise_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv"
+            )
+        
+        with tab2:
+            st.subheader("📊 Visualização Estática")
+            
+            if response["matplotlib_fig"] is not None:
+                st.pyplot(response["matplotlib_fig"])
+            else:
+                st.info("🔍 Gráfico não disponível para este tipo de dados")
+        
+        with tab3:
+            st.subheader("📈 Visualização Interativa")
+            
+            if response["plotly_fig"] is not None:
+                st.plotly_chart(response["plotly_fig"], use_container_width=True)
+            else:
+                # Criar gráfico básico com Plotly se não houver
+                if len(response["data"]) > 0 and len(response["data"].columns) >= 2:
+                    try:
+                        x_col = response["data"].columns[0]
+                        y_col = response["data"].columns[1]
+                        
+                        if chart_type.lower() == "pizza":
+                            fig = px.pie(response["data"], values=y_col, names=x_col)
+                        elif chart_type.lower() == "linha":
+                            fig = px.line(response["data"], x=x_col, y=y_col, markers=True)
+                        else:
+                            fig = px.bar(response["data"], x=x_col, y=y_col)
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                    except Exception as e:
+                        st.info(f"🔍 Não foi possível gerar gráfico: {e}")
+                else:
+                    st.info("🔍 Dados insuficientes para gráfico")
+    
+    else:
+        st.markdown("""
+        <div class="error-box">
+        """ + response["summary"] + """
+        </div>
+        """, unsafe_allow_html=True)
 
 # Rodapé
 st.divider()
-st.caption("Sistema de análise com IA v2.0 | Desenvolvido com Streamlit e LangChain")
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.caption("🤖 **Sistema de IA**: Análise inteligente de dados")
+
+with col2:
+    st.caption("📊 **Tecnologias**: Streamlit + LangChain + OpenAI")
+
+with col3:
+    if 'last_response' in st.session_state:
+        st.caption(f"⏱️ **Última análise**: {st.session_state.last_response['total_records']} registros")

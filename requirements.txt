@@ -7,3 +7,5 @@ sqlalchemy
 matplotlib
 pandas
 python-dotenv
+seaborn
+plotly
