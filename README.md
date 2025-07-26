@@ -9,4 +9,4 @@ streamlit run app.py
 
 Fluxo dos agentes:
 
-![Texto alternativo](/pngs/Fluxo.png)
+![Texto alternativo](../pngs/Fluxo.png)
