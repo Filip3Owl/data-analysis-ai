@@ -32,7 +32,7 @@ plt.rcParams['ytick.color'] = '#1e293b'
 plt.rcParams['axes.facecolor'] = 'white'
 plt.rcParams['figure.facecolor'] = 'white'
 
-# CSS customizado melhorado
+# CSS customizado melhorado com botões de exemplo
 st.markdown("""
 <style>
     :root {
@@ -46,6 +46,8 @@ st.markdown("""
         --sidebar-bg: #ffffff;     /* Fundo branco para sidebar */
         --schema-bg: #f1f5f9;      /* Fundo cinza claro para schema */
         --border-color: #e2e8f0;
+        --success-color: #10b981;
+        --warning-color: #f59e0b;
     }
 
     body {
@@ -240,7 +242,7 @@ st.markdown("""
         background-color: var(--sidebar-bg) !important;
     }
 
-    /* Botões da sidebar */
+    /* Botões da sidebar - MELHORADO PARA EXEMPLOS */
     .stButton button {
         width: 100% !important;
         text-align: left !important;
@@ -248,12 +250,46 @@ st.markdown("""
         color: var(--dark-text) !important;
         border: 1px solid var(--border-color) !important;
         margin-bottom: 0.5rem !important;
+        transition: all 0.3s ease !important;
+        position: relative !important;
+        overflow: hidden !important;
     }
 
     .stButton button:hover {
         background-color: var(--primary) !important;
         color: white !important;
         border-color: var(--primary) !important;
+        transform: translateX(2px) !important;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+    }
+
+    .stButton button:active {
+        background-color: var(--success-color) !important;
+        border-color: var(--success-color) !important;
+        transform: translateX(0px) !important;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+    }
+
+    /* Indicador visual para botão clicado */
+    .stButton button:focus {
+        background-color: var(--success-color) !important;
+        border-color: var(--success-color) !important;
+        color: white !important;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3) !important;
+    }
+
+    /* Animação de pulso para indicar clique */
+    @keyframes button-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .stButton button.clicked {
+        animation: button-pulse 0.6s !important;
+        background-color: var(--success-color) !important;
+        border-color: var(--success-color) !important;
+        color: white !important;
     }
 
     /* Texto da sidebar */
@@ -287,6 +323,41 @@ st.markdown("""
     .footer a:hover {
         text-decoration: underline;
     }
+
+    /* Estilo para botão selecionado */
+    .selected-example-button {
+        background-color: var(--success-color) !important;
+        border-color: var(--success-color) !important;
+        color: white !important;
+        font-weight: 600 !important;
+    }
+
+    /* Indicador de status da query */
+    .query-status {
+        padding: 0.5rem;
+        border-radius: 4px;
+        margin: 0.5rem 0;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .query-status.success {
+        background-color: #d1fae5;
+        color: #065f46;
+        border-left: 4px solid var(--success-color);
+    }
+
+    .query-status.error {
+        background-color: #fee2e2;
+        color: #991b1b;
+        border-left: 4px solid #dc2626;
+    }
+
+    .query-status.warning {
+        background-color: #fef3c7;
+        color: #92400e;
+        border-left: 4px solid var(--warning-color);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -309,7 +380,6 @@ st.markdown("""
 # Verificação do banco de dados
 DB_PATH = PROJECT_ROOT / 'data' / 'clientes_completo.db'
 
-
 @st.cache_data
 def quick_database_check():
     if not DB_PATH.exists():
@@ -325,12 +395,9 @@ def quick_database_check():
                 return False, "Falha na conexão"
             if health["total_records"] == 0:
                 return False, "Banco sem dados"
-            return True, f"✅ {
-                health['tables_count']} tabelas, {
-                health['total_records']:,} registros"
+            return True, f"✅ {health['tables_count']} tabelas, {health['total_records']:,} registros"
     except Exception as e:
         return False, f"Erro: {str(e)}"
-
 
 db_ok, db_message = quick_database_check()
 
@@ -350,6 +417,137 @@ try:
 except Exception as e:
     st.error(f"Erro na inicialização: {str(e)}")
     st.stop()
+
+# Funções auxiliares para diagnóstico
+def execute_query_with_debug(db, query):
+    """Executa query com informações de debug detalhadas"""
+    import time
+    
+    start_time = time.time()
+    result = {
+        'query': query,
+        'success': False,
+        'error': None,
+        'execution_time': 0,
+        'row_count': 0,
+        'similar_queries': []
+    }
+    
+    try:
+        data = db.execute_query(query)
+        result['execution_time'] = time.time() - start_time
+        
+        if data is not None and len(data) > 0:
+            result['success'] = True
+            result['row_count'] = len(data)
+        else:
+            result['success'] = True
+            result['row_count'] = 0
+            
+        # Gerar queries similares sugeridas
+        result['similar_queries'] = generate_similar_queries(db, query)
+        
+    except Exception as e:
+        result['error'] = str(e)
+        result['execution_time'] = time.time() - start_time
+        result['similar_queries'] = generate_fallback_queries(db)
+    
+    return result
+
+def generate_similar_queries(db, original_query):
+    """Gera queries similares baseadas na original"""
+    suggestions = []
+    
+    # Queries básicas de exploração
+    tables = db.get_all_tables()
+    
+    for table in tables:
+        suggestions.extend([
+            f"SELECT * FROM {table} LIMIT 10",
+            f"SELECT COUNT(*) as total FROM {table}",
+            f"SELECT * FROM {table} WHERE rowid IN (1,2,3,4,5)"
+        ])
+    
+    # Se a query original menciona 'app' ou 'maio'
+    if 'app' in original_query.lower():
+        for table in tables:
+            columns = db.get_table_columns(table)
+            canal_cols = [col for col in columns if 'canal' in col.lower()]
+            for col in canal_cols:
+                suggestions.append(f"SELECT DISTINCT {col} FROM {table}")
+                suggestions.append(f"SELECT {col}, COUNT(*) FROM {table} GROUP BY {col}")
+    
+    if 'maio' in original_query.lower() or '05' in original_query:
+        for table in tables:
+            columns = db.get_table_columns(table)
+            date_cols = [col for col in columns if any(term in col.lower() for term in ['data', 'date'])]
+            for col in date_cols:
+                suggestions.append(f"SELECT DISTINCT {col} FROM {table} LIMIT 10")
+    
+    return suggestions[:5]  # Limitar a 5 sugestões
+
+def generate_fallback_queries(db):
+    """Gera queries básicas de fallback quando há erro"""
+    queries = []
+    tables = db.get_all_tables()
+    
+    for table in tables[:3]:  # Limitar a 3 tabelas
+        queries.extend([
+            f"SELECT * FROM {table} LIMIT 5",
+            f"SELECT COUNT(*) as registros FROM {table}"
+        ])
+    
+    return queries
+
+def diagnose_query_failure(db, query):
+    """Diagnostica por que uma query falhou"""
+    diagnosis = {
+        'issues_found': [],
+        'suggestions': [],
+        'table_info': {},
+        'sample_data': {}
+    }
+    
+    try:
+        # Analisar tabelas mencionadas na query
+        tables = db.get_all_tables()
+        
+        for table in tables:
+            try:
+                columns = db.get_table_columns(table)
+                types = db.get_column_types(table) if hasattr(db, 'get_column_types') else ['TEXT'] * len(columns)
+                count = db.execute_query(f"SELECT COUNT(*) as count FROM {table}")
+                
+                diagnosis['table_info'][table] = {
+                    'columns': columns,
+                    'types': types,
+                    'count': count.iloc[0]['count'] if count is not None and len(count) > 0 else 0
+                }
+                
+                # Amostra de dados
+                sample = db.execute_query(f"SELECT * FROM {table} LIMIT 3")
+                if sample is not None and len(sample) > 0:
+                    diagnosis['sample_data'][table] = sample.to_dict('records')
+                    
+            except Exception as e:
+                diagnosis['issues_found'].append(f"Erro ao analisar tabela {table}: {str(e)}")
+        
+        # Verificações específicas
+        if 'app' in query.lower():
+            diagnosis['suggestions'].append("Verifique se existe uma coluna 'canal', 'canal_venda' ou similar")
+            diagnosis['suggestions'].append("Teste diferentes valores: 'app', 'mobile', 'aplicativo'")
+        
+        if 'maio' in query.lower():
+            diagnosis['suggestions'].append("Verifique o formato das datas no banco")
+            diagnosis['suggestions'].append("Teste com diferentes formatos: '2024-05', 'maio', '05'")
+        
+        if 'estado' in query.lower():
+            diagnosis['suggestions'].append("Verifique se existe coluna 'estado', 'uf' ou 'regiao'")
+    
+    except Exception as e:
+        diagnosis['issues_found'].append(f"Erro no diagnóstico: {str(e)}")
+    
+    return diagnosis
 
 # Sidebar - Configurações
 with st.sidebar:
@@ -414,6 +612,10 @@ with st.sidebar:
 
     st.divider()
 
+    # Inicializar estado para botão selecionado
+    if 'selected_example' not in st.session_state:
+        st.session_state.selected_example = None
+
     # Exemplos de consultas - EXPANDIDOS
     st.subheader("💡 Exemplos de Consultas")
     exemplos = {
@@ -438,9 +640,16 @@ with st.sidebar:
         palavra in k.lower() for palavra in ['vendas', 'produto', 'top', 'cliente'])}
 
     for exemplo, tipo in vendas_exemplos.items():
-        if st.button(f"{tipo} {exemplo}", key=f"exemplo_vendas_{exemplo}"):
+        # Verificar se este exemplo está selecionado
+        is_selected = st.session_state.selected_example == exemplo
+        button_key = f"exemplo_vendas_{exemplo}"
+        
+        if st.button(f"{tipo} {exemplo}", key=button_key):
             st.session_state.exemplo_selecionado = exemplo
             st.session_state.output_type = tipo
+            st.session_state.selected_example = exemplo
+            # Forçar rerun para atualizar a interface
+            st.rerun()
 
     st.markdown("**📱 Análises de Canais:**")
     canais_exemplos = {
@@ -453,27 +662,42 @@ with st.sidebar:
                 'reclamações'])}
 
     for exemplo, tipo in canais_exemplos.items():
-        if st.button(f"{tipo} {exemplo}", key=f"exemplo_canais_{exemplo}"):
+        is_selected = st.session_state.selected_example == exemplo
+        button_key = f"exemplo_canais_{exemplo}"
+        
+        if st.button(f"{tipo} {exemplo}", key=button_key):
             st.session_state.exemplo_selecionado = exemplo
             st.session_state.output_type = tipo
+            st.session_state.selected_example = exemplo
+            st.rerun()
 
     st.markdown("**🌍 Análises Geográficas:**")
     geo_exemplos = {k: v for k, v in exemplos.items() if any(
         palavra in k.lower() for palavra in ['estado', 'região', 'distribuição'])}
 
     for exemplo, tipo in geo_exemplos.items():
-        if st.button(f"{tipo} {exemplo}", key=f"exemplo_geo_{exemplo}"):
+        is_selected = st.session_state.selected_example == exemplo
+        button_key = f"exemplo_geo_{exemplo}"
+        
+        if st.button(f"{tipo} {exemplo}", key=button_key):
             st.session_state.exemplo_selecionado = exemplo
             st.session_state.output_type = tipo
+            st.session_state.selected_example = exemplo
+            st.rerun()
 
     st.markdown("**📈 Análises Temporais:**")
     tempo_exemplos = {k: v for k, v in exemplos.items() if any(palavra in k.lower(
     ) for palavra in ['maio', '2024', 'evolução', 'mensais', 'dias'])}
 
     for exemplo, tipo in tempo_exemplos.items():
-        if st.button(f"{tipo} {exemplo}", key=f"exemplo_tempo_{exemplo}"):
+        is_selected = st.session_state.selected_example == exemplo
+        button_key = f"exemplo_tempo_{exemplo}"
+        
+        if st.button(f"{tipo} {exemplo}", key=button_key):
             st.session_state.exemplo_selecionado = exemplo
             st.session_state.output_type = tipo
+            st.session_state.selected_example = exemplo
+            st.rerun()
 
 # Interface principal
 st.header("🎯 Faça sua Análise")
@@ -519,8 +743,6 @@ with st.expander("⚙️ Opções Avançadas"):
         )
 
 # Função para pré-processar a consulta do usuário
-
-
 def preprocess_user_query(query):
     """Melhora a consulta do usuário para melhor interpretação pela IA"""
 
@@ -540,7 +762,6 @@ def preprocess_user_query(query):
     context_hint = " (Considere que temos dados de clientes com colunas como: nome, estado, cidade, data_compra, canal_venda, valor_compra)"
 
     return processed_query + context_hint
-
 
 def get_relevant_metric_columns(df):
     """Identifica colunas numéricas relevantes para métricas, excluindo IDs e outros campos irrelevantes."""
@@ -565,7 +786,6 @@ def get_relevant_metric_columns(df):
 
     return relevant_cols
 
-
 def apply_table_sorting(df, sort_column, sort_order):
     """Aplica ordenação à tabela"""
     if sort_column == "Não ordenar" or sort_column not in df.columns:
@@ -574,16 +794,15 @@ def apply_table_sorting(df, sort_column, sort_order):
     ascending = True if sort_order == "Crescente (menor → maior)" else False
     return df.sort_values(by=sort_column, ascending=ascending)
 
-
 # Botão de análise
 if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured):
     if not user_input.strip():
         st.warning("⚠️ Por favor, descreva sua análise!")
         st.stop()
 
-    # Limpar exemplo selecionado
+    # Limpar exemplo selecionado após análise
     if 'exemplo_selecionado' in st.session_state:
-        del st.session_state.exemplo_selecionado
+        st.session_state.selected_example = None
 
     # Inicializar LLM e Agents
     try:
@@ -610,8 +829,7 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
             processed_input = preprocess_user_query(user_input)
 
             # Interpretação da solicitação
-            interpretation = st.session_state.agents.interpret_request(
-                processed_input)
+            interpretation = st.session_state.agents.interpret_request(processed_input)
 
             # Sobrescrever tipo de saída se não for automático
             if output_type != "🔍 Automático":
@@ -627,45 +845,96 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
             # Executação da query
             results = st.session_state.db.execute_query(sql_query)
 
-            # Debug: mostrar resultados brutos se não há dados
-            if results is None or (
-                isinstance(
-                    results,
-                    pd.DataFrame) and len(results) == 0):
-                st.warning(
-                    "⚠️ A consulta não retornou dados. Verificando possíveis problemas...")
+            # Debug avançado: mostrar resultados brutos se não há dados
+            if results is None or (isinstance(results, pd.DataFrame) and len(results) == 0):
+                st.warning("⚠️ A consulta não retornou dados. Executando diagnóstico avançado...")
 
-                # Mostrar a query para debug
-                st.code(sql_query, language="sql")
-
-                # Tentar queries de diagnóstico
-                try:
-                    # Verificar se existem dados na tabela principal
-                    test_query = "SELECT COUNT(*) as total FROM clientes LIMIT 1"
-                    test_result = st.session_state.db.execute_query(test_query)
-                    if test_result is not None and len(test_result) > 0:
-                        st.info(
-                            f"Total de registros na tabela clientes: {
-                                test_result.iloc[0]['total']}")
-
-                    # Verificar estrutura da tabela
-                    schema_query = "PRAGMA table_info(clientes)"
-                    schema_result = st.session_state.db.execute_query(
-                        schema_query)
-                    if schema_result is not None and len(schema_result) > 0:
-                        st.write("Estrutura da tabela:")
-                        st.dataframe(schema_result)
-
-                    # Verificar dados de exemplo
-                    sample_query = "SELECT * FROM clientes LIMIT 5"
-                    sample_result = st.session_state.db.execute_query(
-                        sample_query)
-                    if sample_result is not None and len(sample_result) > 0:
-                        st.write("Dados de exemplo:")
-                        st.dataframe(sample_result)
-
-                except Exception as debug_e:
-                    st.error(f"Erro no diagnóstico: {debug_e}")
+                # Usar as funções de debug corrigidas
+                debug_result = execute_query_with_debug(st.session_state.db, sql_query)
+                
+                with st.expander("🔍 Diagnóstico Detalhado da Query", expanded=True):
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.subheader("📊 Informações da Execução")
+                        status_class = "success" if debug_result['success'] else "error"
+                        st.markdown(f"""
+                        <div class="query-status {status_class}">
+                            <strong>Status:</strong> {'✅ Sucesso' if debug_result['success'] else '❌ Falha'}<br>
+                            <strong>Tempo:</strong> {debug_result['execution_time']:.3f}s<br>
+                            <strong>Registros:</strong> {debug_result['row_count']}
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        if debug_result['error']:
+                            st.error(f"**Erro:** {debug_result['error']}")
+                    
+                    with col2:
+                        st.subheader("🔧 Query Executada")
+                        st.code(debug_result['query'], language="sql")
+                
+                # Diagnóstico da falha
+                diagnosis = diagnose_query_failure(st.session_state.db, sql_query)
+                
+                if diagnosis['issues_found']:
+                    st.subheader("⚠️ Problemas Identificados")
+                    for issue in diagnosis['issues_found']:
+                        st.error(f"• {issue}")
+                
+                if diagnosis['suggestions']:
+                    st.subheader("💡 Sugestões de Correção")
+                    for suggestion in diagnosis['suggestions']:
+                        st.info(f"• {suggestion}")
+                
+                # Explorar dados das tabelas relacionadas
+                if diagnosis['table_info']:
+                    st.subheader("📋 Informações das Tabelas")
+                    for table, info in diagnosis['table_info'].items():
+                        with st.expander(f"Tabela: {table} ({info.get('count', 0)} registros)"):
+                            st.write("**Colunas disponíveis:**")
+                            for i, col in enumerate(info.get('columns', [])):
+                                col_type = info.get('types', [''])[i] if i < len(info.get('types', [])) else 'N/A'
+                                st.write(f"• {col} ({col_type})")
+                
+                # Mostrar dados de exemplo se disponíveis
+                if diagnosis['sample_data']:
+                    st.subheader("📄 Dados de Exemplo")
+                    for table, sample in diagnosis['sample_data'].items():
+                        with st.expander(f"Exemplos da tabela {table}"):
+                            if sample:
+                                st.json(sample)
+                            else:
+                                st.write("Nenhum dado de exemplo disponível")
+                
+                # Queries sugeridas
+                if debug_result['similar_queries']:
+                    st.subheader("🔄 Queries Sugeridas para Teste")
+                    for i, suggested_query in enumerate(debug_result['similar_queries']):
+                        col_btn, col_code = st.columns([1, 3])
+                        
+                        with col_btn:
+                            if st.button(f"Testar", key=f"test_query_{i}"):
+                                try:
+                                    test_result = st.session_state.db.execute_query(suggested_query)
+                                    if test_result is not None and len(test_result) > 0:
+                                        st.success(f"✅ Funcionou! ({len(test_result)} registros)")
+                                        # Salvar como resultado válido e recarregar página
+                                        st.session_state.last_response = {
+                                            'success': True,
+                                            'data': test_result,
+                                            'total_records': len(test_result),
+                                            'summary': f"Query sugerida executada com sucesso. Encontrados {len(test_result)} registros.",
+                                            'interpretation': {'intencao': 'Query de diagnóstico sugerida'}
+                                        }
+                                        st.session_state.last_query = suggested_query
+                                        st.rerun()
+                                    else:
+                                        st.warning("Query executou mas não retornou dados")
+                                except Exception as test_e:
+                                    st.error(f"Query falhou: {test_e}")
+                        
+                        with col_code:
+                            st.code(suggested_query, language="sql")
 
                 st.stop()
 
@@ -739,8 +1008,7 @@ if 'last_response' in st.session_state:
 
         # Definir chart_type baseado na interpretação automática
         if output_type == "📊 Gráfico":
-            auto_chart_type = st.session_state.interpretation.get(
-                "tipo_grafico", "barras")
+            auto_chart_type = st.session_state.interpretation.get("tipo_grafico", "barras")
             chart_type = {
                 "barras": "Barras",
                 "pizza": "Pizza",
@@ -752,13 +1020,8 @@ if 'last_response' in st.session_state:
         st.markdown('<div class="output-container">', unsafe_allow_html=True)
 
         # Cabeçalho da análise
-        st.markdown(
-            f'<h2 class="result-title">🔍 Resultados da Análise</h2>',
-            unsafe_allow_html=True)
-        st.markdown(
-            f'<p class="result-subtitle">📌 {
-                response["interpretation"]["intencao"]}</p>',
-            unsafe_allow_html=True)
+        st.markdown(f'<h2 class="result-title">🔍 Resultados da Análise</h2>', unsafe_allow_html=True)
+        st.markdown(f'<p class="result-subtitle">📌 {response["interpretation"]["intencao"]}</p>', unsafe_allow_html=True)
 
         # Resumo textual
         st.markdown(f"""
@@ -768,14 +1031,10 @@ if 'last_response' in st.session_state:
         """, unsafe_allow_html=True)
 
         # Exibir informações básicas do resultado
-        st.info(
-            f"📊 **{len(response['data'])}** registros encontrados | **{len(response['data'].columns)}** colunas")
+        st.info(f"📊 **{len(response['data'])}** registros encontrados | **{len(response['data'].columns)}** colunas")
 
         # Container de métricas
-        if len(
-            response["data"]) > 0 and len(
-            response["data"].select_dtypes(
-                include=['number']).columns) > 0:
+        if len(response["data"]) > 0 and len(response["data"].select_dtypes(include=['number']).columns) > 0:
             # Métricas rápidas
             if len(response["data"]) > 0:
                 metric_cols = st.columns(3)
@@ -869,15 +1128,13 @@ if 'last_response' in st.session_state:
                 st.code(st.session_state.last_query, language="sql")
 
                 st.subheader("Dados Retornados")
-                st.write(
-                    f"Linhas: {len(response['data'])}, Colunas: {len(response['data'].columns)}")
+                st.write(f"Linhas: {len(response['data'])}, Colunas: {len(response['data'].columns)}")
                 if len(response["data"]) > 0:
                     st.write("Primeiras 5 linhas:")
                     st.dataframe(response["data"].head())
 
         # Abas para diferentes visualizações
-        tab1, tab2, tab3 = st.tabs(
-            ["📋 Tabela", "📊 Gráfico Matplotlib", "📈 Gráfico Interativo"])
+        tab1, tab2, tab3 = st.tabs(["📋 Tabela", "📊 Gráfico Matplotlib", "📈 Gráfico Interativo"])
 
         with tab1:
             st.subheader("📋 Dados Tabulares")
@@ -900,9 +1157,7 @@ if 'last_response' in st.session_state:
             with col_sort2:
                 sort_order = st.selectbox(
                     "🔄 Ordem:",
-                    options=[
-                        "Crescente (menor → maior)",
-                        "Decrescente (maior → menor)"],
+                    options=["Crescente (menor → maior)", "Decrescente (maior → menor)"],
                     key="sort_order_select")
 
             with col_sort3:
@@ -930,31 +1185,9 @@ if 'last_response' in st.session_state:
             # Mostrar informações sobre ordenação e filtragem
             if sort_column != "Não ordenar":
                 order_text = "crescente" if "Crescente" in sort_order else "decrescente"
-                st.info(
-                    f"📊 Tabela ordenada por **{sort_column}** em ordem **{order_text}** | Exibindo **{
-                        len(display_df):,    }** de **{
-                        len(
-                            response['data']):,        }** registros")
+                st.info(f"📊 Tabela ordenada por **{sort_column}** em ordem **{order_text}** | Exibindo **{len(display_df):,}** de **{len(response['data']):,}** registros")
             else:
-                st.info(
-                    f"📊 Exibindo **{
-                        len(display_df):,                                        }** de **{
-                        len(
-                            response['data']):,                                                                                                           }** registros")
-
-            # Formatação especial para valores monetários (mantida para exibição)
-            formatted_df = display_df.copy()
-            for col in formatted_df.select_dtypes(include=['number']).columns:
-                if 'valor' in col.lower() or 'preco' in col.lower():
-                    formatted_df[col] = formatted_df[col].apply(
-                        lambda x: f"R$ {x:,.2f}")
-                elif 'count' in col.lower() or col.lower().endswith('_count'):
-                    formatted_df[col] = formatted_df[col].apply(
-                        lambda x: f"{x:,.0f}")
-                elif not any(pattern in col.lower() for pattern in ['id', 'idade']):
-                    # Aplicar formatação numérica apenas para colunas relevantes
-                    formatted_df[col] = formatted_df[col].apply(
-                        lambda x: f"{x:,.2f}" if x != int(x) else f"{x:,.0f}")
+                st.info(f"📊 Exibindo **{len(display_df):,}** de **{len(response['data']):,}** registros")
 
             # Exibir tabela
             st.dataframe(
@@ -972,8 +1205,7 @@ if 'last_response' in st.session_state:
                 st.download_button(
                     "📥 Exportar Dados Exibidos",
                     csv_displayed,
-                    file_name=f"analise_exibida_{
-                        datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    file_name=f"analise_exibida_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv",
                     help="Baixe apenas os dados exibidos na tabela (com ordenação aplicada)")
 
@@ -983,8 +1215,7 @@ if 'last_response' in st.session_state:
                 st.download_button(
                     "📥 Exportar Todos os Dados",
                     csv_all,
-                    file_name=f"analise_completa_{
-                        datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    file_name=f"analise_completa_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv",
                     help="Baixe todos os dados originais da consulta")
 
@@ -1004,9 +1235,10 @@ if 'last_response' in st.session_state:
                     plot_data = response["data"]
                     if 'sort_column_select' in st.session_state and st.session_state.sort_column_select != "Não ordenar":
                         plot_data = apply_table_sorting(
-                            response["data"], st.session_state.get(
-                                'sort_column_select', ''), st.session_state.get(
-                                'sort_order_select', 'Crescente (menor → maior)'))
+                            response["data"], 
+                            st.session_state.get('sort_column_select', ''), 
+                            st.session_state.get('sort_order_select', 'Crescente (menor → maior)')
+                        )
 
                     if chart_type == "Barras" or chart_type == "Automático":
                         data_plot = plot_data.head(20)  # Limitar para legibilidade
@@ -1017,10 +1249,7 @@ if 'last_response' in st.session_state:
 
                     elif chart_type == "Pizza":
                         data_plot = plot_data.head(10)  # Limitar para pizza
-                        ax.pie(
-                            data_plot[y_col],
-                            labels=data_plot[x_col],
-                            autopct='%1.1f%%')
+                        ax.pie(data_plot[y_col], labels=data_plot[x_col], autopct='%1.1f%%')
 
                     elif chart_type == "Linha":
                         ax.plot(plot_data[x_col], plot_data[y_col], marker='o')
@@ -1032,8 +1261,7 @@ if 'last_response' in st.session_state:
                     st.pyplot(fig)
 
                 except Exception as e:
-                    st.warning(
-                        f"⚠️ Erro ao gerar gráfico matplotlib: {str(e)}")
+                    st.warning(f"⚠️ Erro ao gerar gráfico matplotlib: {str(e)}")
                     st.info("📋 Exibindo dados em formato tabular")
                     st.dataframe(response["data"])
             else:
@@ -1054,9 +1282,10 @@ if 'last_response' in st.session_state:
                     plot_data = response["data"]
                     if 'sort_column_select' in st.session_state and st.session_state.sort_column_select != "Não ordenar":
                         plot_data = apply_table_sorting(
-                            response["data"], st.session_state.get(
-                                'sort_column_select', ''), st.session_state.get(
-                                'sort_order_select', 'Crescente (menor → maior)'))
+                            response["data"], 
+                            st.session_state.get('sort_column_select', ''), 
+                            st.session_state.get('sort_order_select', 'Crescente (menor → maior)')
+                        )
 
                     if chart_type == "Pizza":
                         fig = px.pie(plot_data.head(10), values=y_col, names=x_col)
@@ -1070,8 +1299,7 @@ if 'last_response' in st.session_state:
                     st.plotly_chart(fig, use_container_width=True)
 
                 except Exception as e:
-                    st.warning(
-                        f"⚠️ Erro ao gerar gráfico interativo: {str(e)}")
+                    st.warning(f"⚠️ Erro ao gerar gráfico interativo: {str(e)}")
                     st.info("📋 Exibindo dados em formato tabular")
                     st.dataframe(response["data"])
             else:
