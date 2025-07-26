@@ -11,7 +11,6 @@ import re
 from datetime import datetime
 import logging
 
-# Importar os prompts (assumindo que você tem o arquivo prompts.py)
 try:
     from .prompts import INTERPRETATION_PROMPT, SQL_PROMPT, FORMATTING_PROMPT, ERROR_PROMPT
 except ImportError:
