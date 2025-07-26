@@ -7,7 +7,7 @@ from src.database import DatabaseManager
 from langchain.llms import OpenAI
 from dotenv import load_dotenv
 import pandas as pd
-import datetime as datetime
+from datetime import datetime
 import json
 import plotly.express as px
 import matplotlib.pyplot as plt
