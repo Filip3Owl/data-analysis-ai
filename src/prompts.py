@@ -18,28 +18,33 @@ INTERPRETATION_PROMPT = PromptTemplate(
     ### Instruções:
     1. Analise a pergunta e identifique quais tabelas são necessárias
     2. Determine os filtros relevantes (WHERE)
-    3. Identifique as métricas a calcular (COUNT, SUM, AVG)
+    3. Identifique as métricas a calcular (COUNT, SUM, AVG, etc.)
     4. Especifique os campos para agrupamento (GROUP BY)
     5. Defina o formato de saída desejado (tabela/gráfico/texto)
+    6. Para ordenação, considere ORDER BY quando relevante
 
-    Retorne APENAS um JSON com esta estrutura:
+    Retorne APENAS um JSON válido com esta estrutura:
     {{
-        "intenção": "Descrição clara do objetivo",
+        "intencao": "Descrição clara do objetivo",
         "tabelas": ["lista", "de", "tabelas"],
         "filtros": ["condicao1", "condicao2"],
         "agregacoes": ["funcao(coluna) AS alias"],
         "grupo_por": ["coluna1", "coluna2"],
+        "ordenacao": ["coluna DESC/ASC"],
+        "limite": 10,
         "formato_saida": "tabela/gráfico/texto"
     }}
 
-    Exemplo para "Vendas por estado em 2023":
+    Exemplo para "Top 5 estados com mais vendas em 2024":
     {{
-        "intenção": "Total de vendas agrupadas por estado em 2023",
+        "intencao": "Ranking dos 5 estados com maior volume de vendas em 2024",
         "tabelas": ["compras", "clientes"],
-        "filtros": ["strftime('%Y', data_compra) = '2023'"],
-        "agregacoes": ["SUM(valor) AS total_vendas"],
+        "filtros": ["strftime('%Y', compras.data_compra) = '2024'"],
+        "agregacoes": ["SUM(compras.valor) AS total_vendas", "COUNT(compras.id) AS total_pedidos"],
         "grupo_por": ["clientes.estado"],
-        "formato_saida": "gráfico"
+        "ordenacao": ["total_vendas DESC"],
+        "limite": 5,
+        "formato_saida": "tabela"
     }}
     """
 )
@@ -50,28 +55,45 @@ SQL_PROMPT = PromptTemplate(
     template="""
     Você é um especialista em SQLite. Gere uma query SQL válida seguindo estas regras:
 
-    1. Use apenas estas tabelas:
-       - clientes(id,nome,email,idade,cidade,estado,profissao,genero)
-       - compras(id,cliente_id,data_compra,valor,categoria,canal)
-       - suporte(id,cliente_id,data_contato,tipo_contato,resolvido,canal)
-       - campanhas(id,cliente_id,nome_campanha,data_envio,interagiu,canal)
+    ### Tabelas Disponíveis:
+    - clientes(id, nome, email, idade, cidade, estado, profissao, genero)
+    - compras(id, cliente_id, data_compra, valor, categoria, canal)
+    - suporte(id, cliente_id, data_contato, tipo_contato, resolvido, canal)
+    - campanhas_marketing(id, cliente_id, nome_campanha, data_envio, interagiu, canal)
 
-    2. Relacionamentos:
-       - compras.cliente_id = clientes.id
-       - suporte.cliente_id = clientes.id
-       - campanhas.cliente_id = clientes.id
+    ### Relacionamentos (JOINs):
+    - compras.cliente_id = clientes.id
+    - suporte.cliente_id = clientes.id
+    - campanhas_marketing.cliente_id = clientes.id
 
-    3. Sempre verifique se os campos usados existem nas tabelas
+    ### Regras Importantes:
+    1. Use INNER JOIN quando precisar de dados relacionados
+    2. Use aliases para tabelas (c para clientes, co para compras, etc.)
+    3. Para datas use: strftime('%Y', data_compra) = '2024'
+    4. Para valores monetários use: ROUND(SUM(valor), 2)
+    5. Para percentuais use: ROUND((COUNT(*) * 100.0 / total), 2)
 
-    4. Para datas use: strftime('%Y', data_compra) = '2024'
+    ### Interpretação da Solicitação:
+    {interpretation}
 
-    5. Se a pergunta mencionar:
-       - "este ano" → strftime('%Y', data) = strftime('%Y', 'now')
-       - "este mês" → strftime('%Y-%m', data) = strftime('%Y-%m', 'now')
+    ### Instruções Finais:
+    - Gere APENAS a query SQL válida
+    - Sem explicações ou comentários
+    - Use nomes descritivos para aliases
+    - Inclua LIMIT quando especificado
+    - Use ORDER BY quando há ordenação
 
-    Solicitação: {interpretation}
-
-    Retorne APENAS a query SQL, sem explicações.
+    ### Exemplo de Query Esperada:
+    SELECT 
+        c.estado,
+        SUM(co.valor) AS total_vendas,
+        COUNT(co.id) AS total_pedidos
+    FROM compras co
+    INNER JOIN clientes c ON co.cliente_id = c.id
+    WHERE strftime('%Y', co.data_compra) = '2024'
+    GROUP BY c.estado
+    ORDER BY total_vendas DESC
+    LIMIT 5;
     """
 )
 
@@ -79,55 +101,107 @@ SQL_PROMPT = PromptTemplate(
 FORMATTING_PROMPT = PromptTemplate(
     input_variables=["original_question", "query_results"],
     template="""
-    Você é um analista de dados. Formate os resultados para o usuário final.
+    Você é um analista de dados experiente. Formate os resultados para apresentação executiva.
 
     ### Pergunta Original:
     {original_question}
 
-    ### Dados Brutos (JSON):
+    ### Dados Obtidos (JSON):
     {query_results}
 
-    ### Instruções:
-    1. Comece com um resumo executivo (1-2 frases)
-    2. Destaque insights importantes (máximos, mínimos, tendências)
-    3. Formate conforme solicitado:
-       - Tabelas: use Markdown com alinhamento
-       - Gráficos: sugira o tipo ideal (barras, pizza, linhas)
-    4. Se relevante, mostre exemplos dos dados
-    5. Seja conciso (máximo 200 palavras)
+    ### Instruções de Formatação:
+    1. **Resumo Executivo**: 1-2 frases com o principal insight
+    2. **Dados Formatados**: 
+       - Para tabelas: use Markdown com alinhamento
+       - Para valores monetários: R$ X.XXX,XX
+       - Para percentuais: XX,X%
+       - Para números: formatação com separadores de milhares
+    3. **Insights Chave**:
+       - Destaque máximos, mínimos, médias
+       - Identifique tendências ou padrões
+       - Mencione outliers relevantes
+    4. **Recomendações**: Se apropriado, sugira ações
+    5. **Limite**: Máximo 250 palavras
+
+    ### Formato por Tipo:
+    - **Tabelas**: Use | Coluna | Valor | formato Markdown
+    - **Gráficos**: Descreva o tipo ideal e principais pontos
+    - **Métricas**: Destaque KPIs principais com contexto
 
     ### Exemplo para "Vendas por categoria":
-    "As vendas totais por categoria são: Eletrônicos (R$12.340,00), Roupas (R$8.570,00)... 
-    A categoria mais vendida foi Eletrônicos, representando 42% do total."
+    📊 **Resumo**: As vendas totalizaram R$ 45.230,00 distribuídas em 4 categorias principais.
 
-    ### Formato Esperado:
-    - Para tabelas: use Markdown
-    - Para gráficos: descreva o gráfico ideal
-    - Para textos: seja direto e informativo
+    | Categoria | Vendas | Participação |
+    |-----------|--------|--------------|
+    | Eletrônicos | R$ 18.950,00 | 41,9% |
+    | Roupas | R$ 12.340,00 | 27,3% |
+    | Casa | R$ 8.760,00 | 19,4% |
+    | Livros | R$ 5.180,00 | 11,4% |
+
+    🎯 **Insights**: Eletrônicos dominam com 42% das vendas. Oportunidade de crescimento em Casa e Livros.
     """
 )
 
 # Prompt para tratamento de erros
 ERROR_PROMPT = PromptTemplate(
-    input_variables=["error_message", "query"],
+    input_variables=["error_message", "query", "user_question"],
     template="""
-    Você precisa explicar um erro de banco de dados para um usuário não técnico.
+    Você é um assistente técnico amigável. Explique o erro de forma clara e ofereça soluções.
 
-    ### Erro Ocorrido:
+    ### Pergunta do Usuário:
+    {user_question}
+
+    ### Erro Técnico:
     {error_message}
 
-    ### Query que Causou o Erro:
+    ### Query que Falhou:
     {query}
 
     ### Instruções:
-    1. Explique o erro em linguagem simples
-    2. Sugira possíveis correções
-    3. Se for erro de sintaxe, aponte o provável local
-    4. Mantenha o tom profissional mas acessível
-    5. Limite a 100 palavras
+    1. **Tradução do Erro**: Explique em linguagem simples
+    2. **Causa Provável**: Identifique o que pode ter causado
+    3. **Soluções**: Sugira 2-3 alternativas práticas
+    4. **Tom**: Profissional mas acessível
+    5. **Limite**: Máximo 150 palavras
 
-    Exemplo:
-    "Parece que há um problema com a data informada. Verifique se o formato está correto (AAAA-MM-DD) 
-    e se existem registros no período solicitado."
+    ### Tipos Comuns de Erro:
+    - **"no such table"**: Tabela não existe
+    - **"no such column"**: Campo não encontrado
+    - **"syntax error"**: Erro de SQL
+    - **"ambiguous column"**: Campo duplicado entre tabelas
+
+    ### Exemplo de Resposta:
+    ❌ **Problema Identificado**: Não foi possível encontrar os dados solicitados.
+
+    🔍 **Causa**: O campo 'vendas_totais' não existe na tabela. Os campos disponíveis são: valor, categoria, data_compra.
+
+    💡 **Soluções**:
+    1. Reformule a pergunta usando "valor" ao invés de "vendas"
+    2. Tente: "Qual o total de valores por categoria?"
+    3. Verifique se o período solicitado tem dados disponíveis
+
+    🔧 Posso ajudar reformulando sua pergunta!
+    """
+)
+
+# Prompt adicional para validação de dados
+VALIDATION_PROMPT = PromptTemplate(
+    input_variables=["query_results", "expected_format"],
+    template="""
+    Valide se os resultados da query estão no formato esperado e contêm dados válidos.
+
+    ### Resultados Obtidos:
+    {query_results}
+
+    ### Formato Esperado:
+    {expected_format}
+
+    ### Verificações:
+    1. Dados não estão vazios
+    2. Tipos de dados corretos (números, datas, textos)
+    3. Valores fazem sentido (sem negativos inesperados)
+    4. Estrutura conforme esperado
+
+    Retorne apenas: "VÁLIDO" ou "INVÁLIDO: [motivo]"
     """
 )
