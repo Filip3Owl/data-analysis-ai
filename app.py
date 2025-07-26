@@ -62,6 +62,21 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
 
+    .author-credit {
+        background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
+        padding: 1rem;
+        border-radius: 8px;
+        color: white;
+        text-align: center;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .author-credit strong {
+        font-size: 1.1em;
+    }
+
     .input-container {
         background-color: var(--container-bg);
         padding: 1.5rem;
@@ -250,6 +265,28 @@ st.markdown("""
     .css-1d391kg h2, .css-1d391kg h3 {
         color: var(--dark-text) !important;
     }
+
+    /* Footer styling */
+    .footer {
+        background-color: var(--card-bg);
+        padding: 1rem;
+        border-radius: 8px;
+        border-top: 2px solid var(--primary);
+        margin-top: 2rem;
+        text-align: center;
+        color: var(--dark-text);
+        font-size: 0.9rem;
+    }
+
+    .footer a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .footer a:hover {
+        text-decoration: underline;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -258,6 +295,14 @@ st.markdown("""
 <div class="main-header">
     <h1>📊 Analytics com IA - Versão Completa</h1>
     <p>Obtenha tabelas, gráficos ou resumos textuais conforme sua necessidade</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Créditos do autor
+st.markdown("""
+<div class="author-credit">
+    <strong>🚀 Desenvolvido por Filipe Rangel</strong><br>
+    Aplicação de Analytics com Inteligência Artificial para análise de dados
 </div>
 """, unsafe_allow_html=True)
 
@@ -1035,13 +1080,35 @@ if 'last_response' in st.session_state:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-# Rodapé
+# Rodapé com informações do desenvolvedor
 st.divider()
-st.caption(
-    f"📅 Última atualização: {
-        datetime.now().strftime('%d/%m/%Y %H:%M')} | " f"📊 {
-            st.session_state.get(
-                'last_response',
-                {}).get(
-                    'total_records',
-                0)} registros")
+
+# Footer com créditos expandidos
+st.markdown("""
+<div class="footer">
+    <div style="margin-bottom: 1rem;">
+        <strong>📊 Analytics com IA - Versão Completa</strong>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <strong>🚀 Desenvolvido por:</strong><br>
+            <strong>Filipe Rangel</strong><br>
+            <small>Especialista em Analytics e Inteligência Artificial</small>
+        </div>
+        <div style="text-align: right;">
+            <div><strong>📅 Última atualização:</strong> {datetime_str}</div>
+            <div><strong>📊 Registros processados:</strong> {records_count:,}</div>
+            <div><small>Versão 2.0 - Com IA Integrada</small></div>
+        </div>
+    </div>
+    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); text-align: center;">
+        <small>
+            Esta aplicação utiliza tecnologias de ponta em IA para análise de dados.<br>
+            Desenvolvida com Streamlit, OpenAI GPT, e Python para proporcionar insights inteligentes.
+        </small>
+    </div>
+</div>
+""".format(
+    datetime_str=datetime.now().strftime('%d/%m/%Y %H:%M'),
+    records_count=st.session_state.get('last_response', {}).get('total_records', 0)
+), unsafe_allow_html=True)
