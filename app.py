@@ -47,11 +47,11 @@ st.markdown("""
         --schema-bg: #f1f5f9;      /* Fundo cinza claro para schema */
         --border-color: #e2e8f0;
     }
-    
+
     body {
         background-color: var(--light-bg);
     }
-    
+
     .main-header {
         background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
         padding: 1.5rem;
@@ -61,7 +61,7 @@ st.markdown("""
         margin-bottom: 2rem;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-    
+
     .input-container {
         background-color: var(--container-bg);
         padding: 1.5rem;
@@ -70,7 +70,7 @@ st.markdown("""
         margin-bottom: 1.5rem;
         color: var(--dark-text);
     }
-    
+
     .output-container {
         background-color: var(--container-bg);
         padding: 1.5rem;
@@ -79,7 +79,7 @@ st.markdown("""
         margin-bottom: 1.5rem;
         color: var(--dark-text);
     }
-    
+
     .summary-container {
         background-color: var(--card-bg);
         padding: 1.5rem;
@@ -88,13 +88,13 @@ st.markdown("""
         margin-bottom: 1rem;
         color: var(--dark-text);
     }
-    
+
     .metrics-container {
         display: flex;
         gap: 1rem;
         margin-bottom: 1.5rem;
     }
-    
+
     .metric-card {
         flex: 1;
         background-color: var(--card-bg);
@@ -104,7 +104,7 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         color: var(--dark-text);
     }
-    
+
     .insight-box {
         background: #f0f8ff;
         padding: 1rem;
@@ -113,7 +113,7 @@ st.markdown("""
         margin: 1rem 0;
         color: #2c3e50;
     }
-    
+
     .table-container {
         max-height: 500px;
         overflow-y: auto;
@@ -122,7 +122,7 @@ st.markdown("""
         margin: 1rem 0;
         background-color: var(--card-bg);
     }
-    
+
     .sort-controls {
         background-color: var(--card-bg);
         padding: 1rem;
@@ -131,12 +131,12 @@ st.markdown("""
         margin-bottom: 1rem;
         color: var(--dark-text);
     }
-    
+
     .dataframe {
         width: 100% !important;
         color: var(--dark-text) !important;
     }
-    
+
     .dataframe th {
         background-color: var(--primary) !important;
         color: white !important;
@@ -144,12 +144,12 @@ st.markdown("""
         top: 0;
         font-weight: 600;
     }
-    
+
     .dataframe td {
         color: var(--dark-text) !important;
         background-color: var(--card-bg) !important;
     }
-    
+
     .stButton>button {
         background-color: var(--primary);
         color: white;
@@ -160,7 +160,7 @@ st.markdown("""
         transition: all 0.2s;
         font-weight: 500;
     }
-    
+
     .error-box {
         background-color: #fee2e2;
         padding: 1rem;
@@ -169,41 +169,41 @@ st.markdown("""
         margin: 1rem 0;
         color: #b91c1c;
     }
-    
+
     .result-title {
         color: var(--dark-text);
         margin-bottom: 0.5rem;
     }
-    
+
     .result-subtitle {
         color: var(--dark-text);
         opacity: 0.8;
         margin-bottom: 1rem;
     }
-    
+
     /* Melhorias para gráficos */
     .js-plotly-plot .plotly, .js-plotly-plot .plotly div {
         color: var(--dark-text) !important;
     }
-    
+
     /* Ajuste para o expander */
     .st-expander {
         border: 1px solid var(--border-color);
         border-radius: 8px;
         background-color: var(--card-bg);
     }
-    
+
     .st-expander .st-expanderHeader {
         color: var(--dark-text) !important;
         font-weight: 600;
         background-color: var(--card-bg) !important;
     }
-    
+
     .st-expander .st-expanderContent {
         color: var(--dark-text) !important;
         background-color: var(--card-bg) !important;
     }
-    
+
     /* Correção para informações do schema - PROBLEMA PRINCIPAL */
     .schema-info {
         background: var(--schema-bg) !important;
@@ -214,17 +214,17 @@ st.markdown("""
         color: var(--dark-text) !important;
         border: 1px solid var(--border-color) !important;
     }
-    
+
     .schema-info strong {
         color: var(--primary) !important;
         font-weight: 600 !important;
     }
-    
+
     /* Sidebar styling */
     .css-1d391kg {
         background-color: var(--sidebar-bg) !important;
     }
-    
+
     /* Botões da sidebar */
     .stButton button {
         width: 100% !important;
@@ -234,18 +234,18 @@ st.markdown("""
         border: 1px solid var(--border-color) !important;
         margin-bottom: 0.5rem !important;
     }
-    
+
     .stButton button:hover {
         background-color: var(--primary) !important;
         color: white !important;
         border-color: var(--primary) !important;
     }
-    
+
     /* Texto da sidebar */
     .css-1d391kg .stMarkdown {
         color: var(--dark-text) !important;
     }
-    
+
     /* Subheaders da sidebar */
     .css-1d391kg h2, .css-1d391kg h3 {
         color: var(--dark-text) !important;
@@ -280,7 +280,9 @@ def quick_database_check():
                 return False, "Falha na conexão"
             if health["total_records"] == 0:
                 return False, "Banco sem dados"
-            return True, f"✅ {health['tables_count']} tabelas, {health['total_records']:,} registros"
+            return True, f"✅ {
+                health['tables_count']} tabelas, {
+                health['total_records']:,} registros"
     except Exception as e:
         return False, f"Erro: {str(e)}"
 
@@ -396,8 +398,14 @@ with st.sidebar:
             st.session_state.output_type = tipo
 
     st.markdown("**📱 Análises de Canais:**")
-    canais_exemplos = {k: v for k, v in exemplos.items() if any(
-        palavra in k.lower() for palavra in ['app', 'whatsapp', 'canal', 'reclamações'])}
+    canais_exemplos = {
+        k: v for k,
+        v in exemplos.items() if any(
+            palavra in k.lower() for palavra in [
+                'app',
+                'whatsapp',
+                'canal',
+                'reclamações'])}
 
     for exemplo, tipo in canais_exemplos.items():
         if st.button(f"{tipo} {exemplo}", key=f"exemplo_canais_{exemplo}"):
@@ -447,8 +455,7 @@ with st.container():
         height=100,
         placeholder="Ex: Mostre os 10 clientes que mais compraram em formato de tabela",
         help="Descreva sua análise em linguagem natural. Ex: 'Top 5 estados com mais vendas'",
-        label_visibility="collapsed"
-    )
+        label_visibility="collapsed")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -518,7 +525,7 @@ def apply_table_sorting(df, sort_column, sort_order):
     """Aplica ordenação à tabela"""
     if sort_column == "Não ordenar" or sort_column not in df.columns:
         return df
-    
+
     ascending = True if sort_order == "Crescente (menor → maior)" else False
     return df.sort_values(by=sort_column, ascending=ascending)
 
@@ -576,7 +583,10 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
             results = st.session_state.db.execute_query(sql_query)
 
             # Debug: mostrar resultados brutos se não há dados
-            if results is None or (isinstance(results, pd.DataFrame) and len(results) == 0):
+            if results is None or (
+                isinstance(
+                    results,
+                    pd.DataFrame) and len(results) == 0):
                 st.warning(
                     "⚠️ A consulta não retornou dados. Verificando possíveis problemas...")
 
@@ -590,7 +600,8 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
                     test_result = st.session_state.db.execute_query(test_query)
                     if test_result is not None and len(test_result) > 0:
                         st.info(
-                            f"Total de registros na tabela clientes: {test_result.iloc[0]['total']}")
+                            f"Total de registros na tabela clientes: {
+                                test_result.iloc[0]['total']}")
 
                     # Verificar estrutura da tabela
                     schema_query = "PRAGMA table_info(clientes)"
@@ -653,7 +664,7 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
                     st.write("**📊 Schema do Banco:**")
                     schema = st.session_state.db.get_database_schema()
                     st.json(schema)
-                except:
+                except BaseException:
                     st.write("Não foi possível carregar o schema do banco")
 
             st.stop()
@@ -697,9 +708,12 @@ if 'last_response' in st.session_state:
 
         # Cabeçalho da análise
         st.markdown(
-            f'<h2 class="result-title">🔍 Resultados da Análise</h2>', unsafe_allow_html=True)
+            f'<h2 class="result-title">🔍 Resultados da Análise</h2>',
+            unsafe_allow_html=True)
         st.markdown(
-            f'<p class="result-subtitle">📌 {response["interpretation"]["intencao"]}</p>', unsafe_allow_html=True)
+            f'<p class="result-subtitle">📌 {
+                response["interpretation"]["intencao"]}</p>',
+            unsafe_allow_html=True)
 
         # Resumo textual
         st.markdown(f"""
@@ -713,7 +727,10 @@ if 'last_response' in st.session_state:
             f"📊 **{len(response['data'])}** registros encontrados | **{len(response['data'].columns)}** colunas")
 
         # Container de métricas
-        if len(response["data"]) > 0 and len(response["data"].select_dtypes(include=['number']).columns) > 0:
+        if len(
+            response["data"]) > 0 and len(
+            response["data"].select_dtypes(
+                include=['number']).columns) > 0:
             # Métricas rápidas
             if len(response["data"]) > 0:
                 metric_cols = st.columns(3)
@@ -823,9 +840,9 @@ if 'last_response' in st.session_state:
             # Controles de ordenação
             st.markdown('<div class="sort-controls">', unsafe_allow_html=True)
             st.markdown("**🔄 Opções de Ordenação**")
-            
+
             col_sort1, col_sort2, col_sort3 = st.columns([3, 2, 2])
-            
+
             with col_sort1:
                 # Opções de colunas para ordenação (incluindo "Não ordenar")
                 sort_options = ["Não ordenar"] + list(response["data"].columns)
@@ -834,14 +851,15 @@ if 'last_response' in st.session_state:
                     options=sort_options,
                     key="sort_column_select"
                 )
-            
+
             with col_sort2:
                 sort_order = st.selectbox(
                     "🔄 Ordem:",
-                    options=["Crescente (menor → maior)", "Decrescente (maior → menor)"],
-                    key="sort_order_select"
-                )
-            
+                    options=[
+                        "Crescente (menor → maior)",
+                        "Decrescente (maior → menor)"],
+                    key="sort_order_select")
+
             with col_sort3:
                 # Quantidade de registros para exibir
                 display_limit = st.selectbox(
@@ -850,26 +868,34 @@ if 'last_response' in st.session_state:
                     index=1,  # Default para 100
                     key="display_limit_select"
                 )
-            
+
             st.markdown('</div>', unsafe_allow_html=True)
 
             # Aplicar ordenação e limite
             display_df = response["data"].copy()
-            
+
             # Aplicar ordenação se selecionada
             if sort_column != "Não ordenar":
                 display_df = apply_table_sorting(display_df, sort_column, sort_order)
-            
+
             # Aplicar limite de registros
             if display_limit != "Todos":
                 display_df = display_df.head(display_limit)
-            
+
             # Mostrar informações sobre ordenação e filtragem
             if sort_column != "Não ordenar":
                 order_text = "crescente" if "Crescente" in sort_order else "decrescente"
-                st.info(f"📊 Tabela ordenada por **{sort_column}** em ordem **{order_text}** | Exibindo **{len(display_df):,}** de **{len(response['data']):,}** registros")
+                st.info(
+                    f"📊 Tabela ordenada por **{sort_column}** em ordem **{order_text}** | Exibindo **{
+                        len(display_df):,    }** de **{
+                        len(
+                            response['data']):,        }** registros")
             else:
-                st.info(f"📊 Exibindo **{len(display_df):,}** de **{len(response['data']):,}** registros")
+                st.info(
+                    f"📊 Exibindo **{
+                        len(display_df):,                                        }** de **{
+                        len(
+                            response['data']):,                                                                                                           }** registros")
 
             # Formatação especial para valores monetários (mantida para exibição)
             formatted_df = display_df.copy()
@@ -894,28 +920,28 @@ if 'last_response' in st.session_state:
 
             # Botões de download
             col_download1, col_download2 = st.columns(2)
-            
+
             with col_download1:
                 # Download dos dados exibidos (com ordenação aplicada)
                 csv_displayed = display_df.to_csv(index=False, encoding='utf-8-sig')
                 st.download_button(
                     "📥 Exportar Dados Exibidos",
                     csv_displayed,
-                    file_name=f"analise_exibida_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    file_name=f"analise_exibida_{
+                        datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv",
-                    help="Baixe apenas os dados exibidos na tabela (com ordenação aplicada)"
-                )
-            
+                    help="Baixe apenas os dados exibidos na tabela (com ordenação aplicada)")
+
             with col_download2:
                 # Download de todos os dados originais
                 csv_all = response["data"].to_csv(index=False, encoding='utf-8-sig')
                 st.download_button(
                     "📥 Exportar Todos os Dados",
                     csv_all,
-                    file_name=f"analise_completa_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    file_name=f"analise_completa_{
+                        datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv",
-                    help="Baixe todos os dados originais da consulta"
-                )
+                    help="Baixe todos os dados originais da consulta")
 
         with tab2:
             st.subheader("📊 Gráfico com Matplotlib")
@@ -933,10 +959,9 @@ if 'last_response' in st.session_state:
                     plot_data = response["data"]
                     if 'sort_column_select' in st.session_state and st.session_state.sort_column_select != "Não ordenar":
                         plot_data = apply_table_sorting(
-                            response["data"], 
-                            st.session_state.get('sort_column_select', ''), 
-                            st.session_state.get('sort_order_select', 'Crescente (menor → maior)')
-                        )
+                            response["data"], st.session_state.get(
+                                'sort_column_select', ''), st.session_state.get(
+                                'sort_order_select', 'Crescente (menor → maior)'))
 
                     if chart_type == "Barras" or chart_type == "Automático":
                         data_plot = plot_data.head(20)  # Limitar para legibilidade
@@ -948,7 +973,9 @@ if 'last_response' in st.session_state:
                     elif chart_type == "Pizza":
                         data_plot = plot_data.head(10)  # Limitar para pizza
                         ax.pie(
-                            data_plot[y_col], labels=data_plot[x_col], autopct='%1.1f%%')
+                            data_plot[y_col],
+                            labels=data_plot[x_col],
+                            autopct='%1.1f%%')
 
                     elif chart_type == "Linha":
                         ax.plot(plot_data[x_col], plot_data[y_col], marker='o')
@@ -982,10 +1009,9 @@ if 'last_response' in st.session_state:
                     plot_data = response["data"]
                     if 'sort_column_select' in st.session_state and st.session_state.sort_column_select != "Não ordenar":
                         plot_data = apply_table_sorting(
-                            response["data"], 
-                            st.session_state.get('sort_column_select', ''), 
-                            st.session_state.get('sort_order_select', 'Crescente (menor → maior)')
-                        )
+                            response["data"], st.session_state.get(
+                                'sort_column_select', ''), st.session_state.get(
+                                'sort_order_select', 'Crescente (menor → maior)'))
 
                     if chart_type == "Pizza":
                         fig = px.pie(plot_data.head(10), values=y_col, names=x_col)
@@ -1011,5 +1037,11 @@ if 'last_response' in st.session_state:
 
 # Rodapé
 st.divider()
-st.caption(f"📅 Última atualização: {datetime.now().strftime('%d/%m/%Y %H:%M')} | "
-           f"📊 {st.session_state.get('last_response', {}).get('total_records', 0)} registros")
+st.caption(
+    f"📅 Última atualização: {
+        datetime.now().strftime('%d/%m/%Y %H:%M')} | " f"📊 {
+            st.session_state.get(
+                'last_response',
+                {}).get(
+                    'total_records',
+                0)} registros")

@@ -5,7 +5,7 @@ INTERPRETATION_PROMPT = PromptTemplate(
     input_variables=["user_input"],
     template="""
     Você é um especialista em SQL e análise de dados. Converta a solicitação do usuário em uma estrutura JSON usando APENAS estas tabelas:
-    
+
     ### Estrutura do Banco de Dados:
     - clientes(id, nome, email, idade, cidade, estado, profissao, genero)
     - compras(id, cliente_id, data_compra, valor, categoria, canal)
@@ -84,7 +84,7 @@ SQL_PROMPT = PromptTemplate(
     - Use ORDER BY quando há ordenação
 
     ### Exemplo de Query Esperada:
-    SELECT 
+    SELECT
         c.estado,
         SUM(co.valor) AS total_vendas,
         COUNT(co.id) AS total_pedidos
@@ -111,7 +111,7 @@ FORMATTING_PROMPT = PromptTemplate(
 
     ### Instruções de Formatação:
     1. **Resumo Executivo**: 1-2 frases com o principal insight
-    2. **Dados Formatados**: 
+    2. **Dados Formatados**:
        - Para tabelas: use Markdown com alinhamento
        - Para valores monetários: R$ X.XXX,XX
        - Para percentuais: XX,X%
