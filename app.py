@@ -24,16 +24,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS customizado
+# CSS customizado melhorado
 st.markdown("""
 <style>
     .main-header {
         background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem;
+        padding: 1.5rem;
         border-radius: 10px;
         color: white;
         text-align: center;
         margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     
     .output-card {
@@ -46,9 +47,10 @@ st.markdown("""
     
     .text-output {
         background: #f8f9fa;
-        padding: 1rem;
+        padding: 1.5rem;
         border-radius: 8px;
         border-left: 4px solid #4e73df;
+        margin-bottom: 1rem;
     }
     
     .table-output {
@@ -56,6 +58,41 @@ st.markdown("""
         overflow-y: auto;
         border: 1px solid #e3e6f0;
         border-radius: 8px;
+        margin: 1rem 0;
+    }
+    
+    .dataframe {
+        width: 100% !important;
+    }
+    
+    .dataframe th {
+        background-color: #667eea !important;
+        color: white !important;
+        position: sticky;
+        top: 0;
+    }
+    
+    .stButton>button {
+        background-color: #667eea;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        margin-top: 1rem;
+        transition: all 0.2s;
+    }
+    
+    .stButton>button:hover {
+        background-color: #5a6ec5;
+        transform: translateY(-1px);
+    }
+    
+    .error-box {
+        background-color: #fee2e2;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #dc2626;
+        margin: 1rem 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -152,7 +189,8 @@ with st.sidebar:
     if output_type == "📊 Gráfico":
         chart_type = st.selectbox(
             "Tipo de gráfico:",
-            ["Barras", "Pizza", "Linha", "Área", "Histograma"]
+            ["Barras", "Pizza", "Linha", "Área", "Histograma"],
+            index=0
         )
     
     st.divider()
@@ -167,7 +205,7 @@ with st.sidebar:
     }
     
     for exemplo, tipo in exemplos.items():
-        if st.button(f"{tipo} {exemplo}"):
+        if st.button(f"{tipo} {exemplo}", key=f"exemplo_{exemplo}"):
             st.session_state.exemplo_selecionado = exemplo
             st.session_state.output_type = tipo
 
@@ -182,7 +220,8 @@ user_input = st.text_area(
     "💬 Descreva o que você quer analisar:",
     value=pergunta_default,
     height=100,
-    placeholder="Ex: Mostre os 10 clientes que mais compraram em formato de tabela"
+    placeholder="Ex: Mostre os 10 clientes que mais compraram em formato de tabela",
+    help="Descreva sua análise em linguagem natural. Ex: 'Top 5 estados com mais vendas'"
 )
 
 # Botão de análise
@@ -250,7 +289,12 @@ if 'last_response' in st.session_state:
     response = st.session_state.last_response
     
     if not response["success"]:
-        st.error(response["summary"])
+        st.markdown(f"""
+        <div class="error-box">
+            <strong>❌ Erro na análise:</strong><br>
+            {response["summary"]}
+        </div>
+        """, unsafe_allow_html=True)
         st.stop()
     
     # Determinar o tipo de saída
@@ -283,20 +327,39 @@ if 'last_response' in st.session_state:
         # Exibir conforme o tipo selecionado
         if output_type == "📋 Tabela":
             st.markdown('<div class="table-output">', unsafe_allow_html=True)
+            
+            # Formatar DataFrame para exibição
+            display_df = response["data"].copy()
+            
+            # Tratar valores nulos
+            display_df = display_df.fillna('')
+            
+            # Formatar colunas numéricas
+            for col in display_df.select_dtypes(include=['number']).columns:
+                if 'valor' in col.lower() or 'total' in col.lower():
+                    display_df[col] = display_df[col].apply(lambda x: f"R$ {x:,.2f}" if pd.notnull(x) else '')
+                elif 'data' in col.lower():
+                    try:
+                        display_df[col] = pd.to_datetime(display_df[col]).dt.strftime('%d/%m/%Y')
+                    except:
+                        pass
+            
             st.dataframe(
-                response["data"],
+                display_df,
                 use_container_width=True,
-                height=500
+                height=min(500, 35 * len(display_df) + 40)  # Altura dinâmica
             )
+            
             st.markdown('</div>', unsafe_allow_html=True)
             
             # Botão de download
-            csv = response["data"].to_csv(index=False)
+            csv = response["data"].to_csv(index=False, encoding='utf-8-sig')
             st.download_button(
                 "📥 Exportar para CSV",
                 csv,
-                file_name=f"dados_{datetime.now().strftime('%Y%m%d')}.csv",
-                mime="text/csv"
+                file_name=f"analise_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv",
+                help="Baixe os dados completos em formato CSV"
             )
         
         elif output_type == "📊 Gráfico":
@@ -305,44 +368,67 @@ if 'last_response' in st.session_state:
                 st.warning("⚠️ Dados insuficientes para gerar o gráfico (necessário pelo menos 2 colunas)")
                 st.dataframe(response["data"])
             else:
-                # Selecionar gráfico apropriado
-                if chart_type == "Barras":
-                    fig = px.bar(
-                        response["data"],
-                        x=response["data"].columns[0],
-                        y=response["data"].columns[1],
-                        title=response["interpretation"]["intencao"]
+                try:
+                    # Selecionar gráfico apropriado
+                    if chart_type == "Barras":
+                        fig = px.bar(
+                            response["data"],
+                            x=response["data"].columns[0],
+                            y=response["data"].columns[1],
+                            title=response["interpretation"]["intencao"],
+                            color=response["data"].columns[0],
+                            text=response["data"].columns[1]
+                        )
+                        fig.update_traces(texttemplate='%{text:.2s}', textposition='outside')
+                        fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
+                    
+                    elif chart_type == "Pizza":
+                        fig = px.pie(
+                            response["data"],
+                            values=response["data"].columns[1],
+                            names=response["data"].columns[0],
+                            title=response["interpretation"]["intencao"],
+                            hole=0.3
+                        )
+                        fig.update_traces(textposition='inside', textinfo='percent+label')
+                    
+                    elif chart_type == "Linha":
+                        fig = px.line(
+                            response["data"],
+                            x=response["data"].columns[0],
+                            y=response["data"].columns[1],
+                            title=response["interpretation"]["intencao"],
+                            markers=True
+                        )
+                    
+                    elif chart_type == "Área":
+                        fig = px.area(
+                            response["data"],
+                            x=response["data"].columns[0],
+                            y=response["data"].columns[1],
+                            title=response["interpretation"]["intencao"]
+                        )
+                    
+                    else:  # Histograma
+                        fig = px.histogram(
+                            response["data"],
+                            x=response["data"].columns[0],
+                            title=response["interpretation"]["intencao"],
+                            nbins=20
+                        )
+                    
+                    fig.update_layout(
+                        hovermode="x unified",
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        margin=dict(l=20, r=20, t=40, b=20)
                     )
-                elif chart_type == "Pizza":
-                    fig = px.pie(
-                        response["data"],
-                        values=response["data"].columns[1],
-                        names=response["data"].columns[0],
-                        title=response["interpretation"]["intencao"]
-                    )
-                elif chart_type == "Linha":
-                    fig = px.line(
-                        response["data"],
-                        x=response["data"].columns[0],
-                        y=response["data"].columns[1],
-                        title=response["interpretation"]["intencao"],
-                        markers=True
-                    )
-                elif chart_type == "Área":
-                    fig = px.area(
-                        response["data"],
-                        x=response["data"].columns[0],
-                        y=response["data"].columns[1],
-                        title=response["interpretation"]["intencao"]
-                    )
-                else:  # Histograma
-                    fig = px.histogram(
-                        response["data"],
-                        x=response["data"].columns[0],
-                        title=response["interpretation"]["intencao"]
-                    )
+                    
+                    st.plotly_chart(fig, use_container_width=True)
                 
-                st.plotly_chart(fig, use_container_width=True)
+                except Exception as e:
+                    st.error(f"Erro ao gerar gráfico: {str(e)}")
+                    st.dataframe(response["data"])
         
         elif output_type == "📝 Texto":
             st.markdown('<div class="text-output">', unsafe_allow_html=True)
@@ -352,16 +438,21 @@ if 'last_response' in st.session_state:
         st.markdown('</div>', unsafe_allow_html=True)
         
         # Detalhes técnicos (expandível)
-        with st.expander("🔧 Detalhes Técnicos"):
-            st.subheader("Interpretação")
-            st.json(st.session_state.interpretation)
+        with st.expander("🔧 Detalhes Técnicos", expanded=False):
+            col1, col2 = st.columns(2)
             
-            st.subheader("Query SQL")
-            st.code(st.session_state.last_query, language="sql")
+            with col1:
+                st.subheader("Interpretação")
+                st.json(st.session_state.interpretation)
+            
+            with col2:
+                st.subheader("Query SQL")
+                st.code(st.session_state.last_query, language="sql")
             
             st.subheader("Dados Brutos")
             st.dataframe(response["data"].head(10))
 
 # Rodapé
 st.divider()
-st.caption("📅 Última atualização: " + datetime.now().strftime("%d/%m/%Y %H:%M"))
+st.caption(f"📅 Última atualização: {datetime.now().strftime('%d/%m/%Y %H:%M')} | "
+           f"📊 {st.session_state.get('last_response', {}).get('total_records', 0)} registros")
