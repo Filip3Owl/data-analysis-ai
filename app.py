@@ -24,17 +24,51 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS customizado melhorado
+# CSS customizado corrigido
 st.markdown("""
 <style>
+    :root {
+        --primary: #667eea;
+        --secondary: #764ba2;
+        --light-bg: #f8fafc;
+        --dark-text: #1e293b;
+        --light-text: #f8fafc;
+    }
+    
+    body {
+        color: var(--dark-text);
+        background-color: var(--light-bg);
+    }
+    
     .main-header {
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
         padding: 1.5rem;
         border-radius: 10px;
-        color: white;
+        color: var(--light-text);
         text-align: center;
         margin-bottom: 2rem;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .input-container {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stTextArea textarea {
+        background-color: white !important;
+        color: var(--dark-text) !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 8px !important;
+        padding: 1rem !important;
+    }
+    
+    .stTextArea label {
+        color: var(--dark-text) !important;
+        font-weight: 600 !important;
     }
     
     .output-card {
@@ -43,48 +77,60 @@ st.markdown("""
         border-radius: 10px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         margin-bottom: 1.5rem;
+        border: 1px solid #e2e8f0;
     }
     
     .text-output {
-        background: #f8f9fa;
+        background: white;
         padding: 1.5rem;
         border-radius: 8px;
-        border-left: 4px solid #4e73df;
+        border-left: 4px solid var(--primary);
         margin-bottom: 1rem;
+        color: var(--dark-text);
     }
     
     .table-output {
         max-height: 500px;
         overflow-y: auto;
-        border: 1px solid #e3e6f0;
+        border: 1px solid #e2e8f0;
         border-radius: 8px;
         margin: 1rem 0;
+        background: white;
     }
     
     .dataframe {
         width: 100% !important;
+        color: var(--dark-text) !important;
     }
     
     .dataframe th {
-        background-color: #667eea !important;
-        color: white !important;
+        background-color: var(--primary) !important;
+        color: var(--light-text) !important;
         position: sticky;
         top: 0;
+        font-weight: 600;
+    }
+    
+    .dataframe td {
+        background-color: white !important;
+        color: var(--dark-text) !important;
     }
     
     .stButton>button {
-        background-color: #667eea;
+        background-color: var(--primary);
         color: white;
         border: none;
         border-radius: 4px;
         padding: 0.5rem 1rem;
         margin-top: 1rem;
         transition: all 0.2s;
+        font-weight: 500;
     }
     
     .stButton>button:hover {
         background-color: #5a6ec5;
         transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     
     .error-box {
@@ -93,6 +139,22 @@ st.markdown("""
         border-radius: 8px;
         border-left: 4px solid #dc2626;
         margin: 1rem 0;
+        color: #b91c1c;
+    }
+    
+    [data-testid="stSidebar"] {
+        background-color: #f8fafc;
+        border-right: 1px solid #e2e8f0;
+    }
+    
+    .stTextArea textarea::placeholder {
+        color: #94a3b8 !important;
+        opacity: 1 !important;
+    }
+    
+    .result-title {
+        color: var(--dark-text);
+        margin-bottom: 0.5rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -212,77 +274,88 @@ with st.sidebar:
 # Interface principal
 st.header("🎯 Faça sua Análise")
 
-# Campo de entrada com exemplo selecionado
-pergunta_default = st.session_state.get('exemplo_selecionado', '')
-output_type = st.session_state.get('output_type', output_type)
-
-user_input = st.text_area(
-    "💬 Descreva o que você quer analisar:",
-    value=pergunta_default,
-    height=100,
-    placeholder="Ex: Mostre os 10 clientes que mais compraram em formato de tabela",
-    help="Descreva sua análise em linguagem natural. Ex: 'Top 5 estados com mais vendas'"
-)
-
-# Botão de análise
-if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured):
-    if not user_input.strip():
-        st.warning("⚠️ Por favor, descreva sua análise!")
-        st.stop()
+# Container para área de entrada
+with st.container():
+    st.markdown('<div class="input-container">', unsafe_allow_html=True)
     
-    if 'exemplo_selecionado' in st.session_state:
-        del st.session_state.exemplo_selecionado
+    # Campo de entrada com exemplo selecionado
+    pergunta_default = st.session_state.get('exemplo_selecionado', '')
+    output_type = st.session_state.get('output_type', output_type)
     
-    # Inicializar LLM e Agents
-    try:
-        if "llm" not in st.session_state or "agents" not in st.session_state:
-            with st.spinner("🔧 Inicializando IA..."):
-                st.session_state.llm = OpenAI(
-                    openai_api_key=openai_key,
-                    temperature=0.3,
-                    max_tokens=2000,
-                    model="gpt-3.5-turbo-instruct"
-                )
-                st.session_state.agents = AgentsManager(
-                    st.session_state.llm, 
-                    st.session_state.db
-                )
-    except Exception as e:
-        st.error(f"❌ Erro ao inicializar IA: {e}")
-        st.stop()
+    st.markdown('<h3 class="result-title">Descreva o que você quer analisar:</h3>', unsafe_allow_html=True)
+    
+    user_input = st.text_area(
+        " ",
+        value=pergunta_default,
+        height=100,
+        placeholder="Ex: Mostre os 10 clientes que mais compraram em formato de tabela",
+        help="Descreva sua análise em linguagem natural. Ex: 'Top 5 estados com mais vendas'",
+        label_visibility="collapsed"
+    )
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # Processamento da análise
-    with st.spinner("🔄 Processando sua solicitação..."):
-        try:
-            # Interpretação da solicitação
-            interpretation = st.session_state.agents.interpret_request(user_input)
-            
-            # Sobrescrever tipo de saída se não for automático
-            if output_type != "🔍 Automático":
-                interpretation["tipo_grafico"] = {
-                    "📋 Tabela": "tabela",
-                    "📊 Gráfico": chart_type.lower(),
-                    "📝 Texto": "texto"
-                }[output_type]
-            
-            # Geração SQL
-            sql_query = st.session_state.agents.generate_sql(interpretation)
-            
-            # Execução da query
-            results = st.session_state.db.execute_query(sql_query)
-            
-            # Formatação da resposta
-            response = st.session_state.agents.format_complete_response(
-                results, interpretation, user_input
-            )
-            
-            st.session_state.last_response = response
-            st.session_state.last_query = sql_query
-            st.session_state.interpretation = interpretation
-            
-        except Exception as e:
-            st.error(f"❌ Erro no processamento: {str(e)}")
+# Botão de análise centralizado
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
+    if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured):
+        if not user_input.strip():
+            st.warning("⚠️ Por favor, descreva sua análise!")
             st.stop()
+        
+        if 'exemplo_selecionado' in st.session_state:
+            del st.session_state.exemplo_selecionado
+        
+        # Inicializar LLM e Agents
+        try:
+            if "llm" not in st.session_state or "agents" not in st.session_state:
+                with st.spinner("🔧 Inicializando IA..."):
+                    st.session_state.llm = OpenAI(
+                        openai_api_key=openai_key,
+                        temperature=0.3,
+                        max_tokens=2000,
+                        model="gpt-3.5-turbo-instruct"
+                    )
+                    st.session_state.agents = AgentsManager(
+                        st.session_state.llm, 
+                        st.session_state.db
+                    )
+        except Exception as e:
+            st.error(f"❌ Erro ao inicializar IA: {e}")
+            st.stop()
+
+        # Processamento da análise
+        with st.spinner("🔄 Processando sua solicitação..."):
+            try:
+                # Interpretação da solicitação
+                interpretation = st.session_state.agents.interpret_request(user_input)
+                
+                # Sobrescrever tipo de saída se não for automático
+                if output_type != "🔍 Automático":
+                    interpretation["tipo_grafico"] = {
+                        "📋 Tabela": "tabela",
+                        "📊 Gráfico": chart_type.lower(),
+                        "📝 Texto": "texto"
+                    }[output_type]
+                
+                # Geração SQL
+                sql_query = st.session_state.agents.generate_sql(interpretation)
+                
+                # Execução da query
+                results = st.session_state.db.execute_query(sql_query)
+                
+                # Formatação da resposta
+                response = st.session_state.agents.format_complete_response(
+                    results, interpretation, user_input
+                )
+                
+                st.session_state.last_response = response
+                st.session_state.last_query = sql_query
+                st.session_state.interpretation = interpretation
+                
+            except Exception as e:
+                st.error(f"❌ Erro no processamento: {str(e)}")
+                st.stop()
 
 # Exibição dos resultados
 if 'last_response' in st.session_state:
@@ -347,7 +420,7 @@ if 'last_response' in st.session_state:
             st.dataframe(
                 display_df,
                 use_container_width=True,
-                height=min(500, 35 * len(display_df) + 40)  # Altura dinâmica
+                height=min(500, 35 * len(display_df) + 40  # Altura dinâmica
             )
             
             st.markdown('</div>', unsafe_allow_html=True)
