@@ -24,19 +24,30 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS customizado corrigido
+# Configurações de estilo para gráficos
+plt.rcParams['text.color'] = '#1e293b'
+plt.rcParams['axes.labelcolor'] = '#1e293b'
+plt.rcParams['xtick.color'] = '#1e293b'
+plt.rcParams['ytick.color'] = '#1e293b'
+plt.rcParams['axes.facecolor'] = 'white'
+plt.rcParams['figure.facecolor'] = 'white'
+
+# CSS customizado melhorado
+# Substitua a parte do CSS por este código:
+
 st.markdown("""
 <style>
     :root {
         --primary: #667eea;
         --secondary: #764ba2;
         --light-bg: #f8fafc;
-        --dark-text: #1e293b;
+        --dark-text: #ffffff;  /* Texto branco */
         --light-text: #f8fafc;
+        --card-bg: #2d3748;    /* Cinza escuro para cards */
+        --container-bg: #4a5568; /* Cinza médio para containers */
     }
     
     body {
-        color: var(--dark-text);
         background-color: var(--light-bg);
     }
     
@@ -51,37 +62,25 @@ st.markdown("""
     }
     
     .input-container {
-        background-color: white;
+        background-color: var(--container-bg);
         padding: 1.5rem;
         border-radius: 8px;
         border: 1px solid #e2e8f0;
         margin-bottom: 1.5rem;
+        color: var(--dark-text);
     }
     
-    .stTextArea textarea {
-        background-color: white !important;
-        color: var(--dark-text) !important;
-        border: 1px solid #e2e8f0 !important;
-        border-radius: 8px !important;
-        padding: 1rem !important;
-    }
-    
-    .stTextArea label {
-        color: var(--dark-text) !important;
-        font-weight: 600 !important;
-    }
-    
-    .output-card {
-        background: white;
+    .output-container {
+        background-color: var(--container-bg);
         padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        margin-bottom: 1.5rem;
+        border-radius: 8px;
         border: 1px solid #e2e8f0;
+        margin-bottom: 1.5rem;
+        color: var(--dark-text);
     }
     
-    .text-output {
-        background: white;
+    .summary-container {
+        background-color: var(--card-bg);
         padding: 1.5rem;
         border-radius: 8px;
         border-left: 4px solid var(--primary);
@@ -89,13 +88,29 @@ st.markdown("""
         color: var(--dark-text);
     }
     
-    .table-output {
+    .metrics-container {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .metric-card {
+        flex: 1;
+        background-color: var(--card-bg);
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid var(--primary);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        color: var(--dark-text);
+    }
+    
+    .table-container {
         max-height: 500px;
         overflow-y: auto;
         border: 1px solid #e2e8f0;
         border-radius: 8px;
         margin: 1rem 0;
-        background: white;
+        background-color: var(--container-bg);
     }
     
     .dataframe {
@@ -105,15 +120,15 @@ st.markdown("""
     
     .dataframe th {
         background-color: var(--primary) !important;
-        color: var(--light-text) !important;
+        color: white !important;
         position: sticky;
         top: 0;
         font-weight: 600;
     }
     
     .dataframe td {
-        background-color: white !important;
         color: var(--dark-text) !important;
+        background-color: var(--container-bg) !important;
     }
     
     .stButton>button {
@@ -127,12 +142,6 @@ st.markdown("""
         font-weight: 500;
     }
     
-    .stButton>button:hover {
-        background-color: #5a6ec5;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
     .error-box {
         background-color: #fee2e2;
         padding: 1rem;
@@ -142,19 +151,36 @@ st.markdown("""
         color: #b91c1c;
     }
     
-    [data-testid="stSidebar"] {
-        background-color: #f8fafc;
-        border-right: 1px solid #e2e8f0;
-    }
-    
-    .stTextArea textarea::placeholder {
-        color: #94a3b8 !important;
-        opacity: 1 !important;
-    }
-    
     .result-title {
         color: var(--dark-text);
         margin-bottom: 0.5rem;
+    }
+    
+    .result-subtitle {
+        color: var(--dark-text);
+        opacity: 0.8;
+        margin-bottom: 1rem;
+    }
+    
+    /* Melhorias para gráficos */
+    .js-plotly-plot .plotly, .js-plotly-plot .plotly div {
+        color: var(--dark-text) !important;
+    }
+    
+    /* Ajuste para o expander */
+    .st-expander {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background-color: var(--container-bg);
+    }
+    
+    .st-expander .st-expanderHeader {
+        color: var(--dark-text);
+        font-weight: 600;
+    }
+    
+    .st-expander .st-expanderContent {
+        color: var(--dark-text);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -389,17 +415,49 @@ if 'last_response' in st.session_state:
                 "linha": "Linha"
             }.get(auto_chart_type, "Barras")
     
-    # Container principal
+    # Container principal de resultados
     with st.container():
-        st.markdown(f'<div class="output-card">', unsafe_allow_html=True)
+        st.markdown('<div class="output-container">', unsafe_allow_html=True)
         
         # Cabeçalho da análise
-        st.subheader("🔍 Resultados da Análise")
-        st.caption(f"📌 {response['interpretation']['intencao']}")
+        st.markdown(f'<h2 class="result-title">🔍 Resultados da Análise</h2>', unsafe_allow_html=True)
+        st.markdown(f'<p class="result-subtitle">📌 {response["interpretation"]["intencao"]}</p>', unsafe_allow_html=True)
+        
+        # Container de métricas
+        if len(response["data"].select_dtypes(include=['number']).columns) > 0:
+            numeric_cols = response["data"].select_dtypes(include=['number']).columns
+            total_value = response["data"][numeric_cols[0]].sum()
+            avg_value = response["data"][numeric_cols[0]].mean()
+            count_value = len(response["data"])
+            
+            st.markdown('<div class="metrics-container">', unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div class="metric-card">
+                <h4>📋 Total Registros</h4>
+                <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">{count_value:,}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div class="metric-card">
+                <h4>💰 Total {numeric_cols[0].replace('_', ' ').title()}</h4>
+                <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">R$ {total_value:,.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div class="metric-card">
+                <h4>📊 Média {numeric_cols[0].replace('_', ' ').title()}</h4>
+                <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">R$ {avg_value:,.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
         
         # Exibir conforme o tipo selecionado
         if output_type == "📋 Tabela":
-            st.markdown('<div class="table-output">', unsafe_allow_html=True)
+            st.markdown('<div class="table-container">', unsafe_allow_html=True)
             
             # Formatar DataFrame para exibição
             display_df = response["data"].copy()
@@ -420,7 +478,7 @@ if 'last_response' in st.session_state:
             st.dataframe(
                 display_df,
                 use_container_width=True,
-                height=min(500, 35 * len(display_df) + 40  # Altura dinâmica
+                height=min(500, 35 * len(display_df)) + 40  # Altura dinâmica
             )
             
             st.markdown('</div>', unsafe_allow_html=True)
@@ -442,69 +500,102 @@ if 'last_response' in st.session_state:
                 st.dataframe(response["data"])
             else:
                 try:
-                    # Selecionar gráfico apropriado
+                    # Determinar automaticamente o melhor tipo de gráfico se for automático
+                    if output_type == "🔍 Automático":
+                        if len(response["data"]) <= 10 and pd.api.types.is_numeric_dtype(response["data"].iloc[:, 1]):
+                            chart_type = "Pizza"
+                        elif pd.api.types.is_datetime64_any_dtype(response["data"].iloc[:, 0]):
+                            chart_type = "Linha"
+                        else:
+                            chart_type = "Barras"
+
+                    # Configurações comuns
+                    common_args = {
+                        'title': response["interpretation"]["intencao"],
+                        'labels': {col: col.replace('_', ' ').title() for col in response["data"].columns}
+                    }
+
                     if chart_type == "Barras":
                         fig = px.bar(
                             response["data"],
                             x=response["data"].columns[0],
                             y=response["data"].columns[1],
-                            title=response["interpretation"]["intencao"],
                             color=response["data"].columns[0],
-                            text=response["data"].columns[1]
+                            text=response["data"].columns[1],
+                            **common_args
                         )
-                        fig.update_traces(texttemplate='%{text:.2s}', textposition='outside')
+                        fig.update_traces(
+                            texttemplate='%{text:.2s}', 
+                            textposition='outside',
+                            marker_line_color='#1e293b',
+                            marker_line_width=0.5
+                        )
                         fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
-                    
+
                     elif chart_type == "Pizza":
                         fig = px.pie(
                             response["data"],
                             values=response["data"].columns[1],
                             names=response["data"].columns[0],
-                            title=response["interpretation"]["intencao"],
-                            hole=0.3
+                            hole=0.3,
+                            **common_args
                         )
-                        fig.update_traces(textposition='inside', textinfo='percent+label')
-                    
+                        fig.update_traces(
+                            textposition='inside', 
+                            textinfo='percent+label',
+                            marker_line_color='#1e293b',
+                            marker_line_width=0.5
+                        )
+
                     elif chart_type == "Linha":
                         fig = px.line(
                             response["data"],
                             x=response["data"].columns[0],
                             y=response["data"].columns[1],
-                            title=response["interpretation"]["intencao"],
-                            markers=True
+                            markers=True,
+                            **common_args
                         )
-                    
+                        fig.update_traces(line_width=2.5)
+
                     elif chart_type == "Área":
                         fig = px.area(
                             response["data"],
                             x=response["data"].columns[0],
                             y=response["data"].columns[1],
-                            title=response["interpretation"]["intencao"]
+                            **common_args
                         )
-                    
+
                     else:  # Histograma
                         fig = px.histogram(
                             response["data"],
                             x=response["data"].columns[0],
-                            title=response["interpretation"]["intencao"],
-                            nbins=20
+                            nbins=20,
+                            **common_args
                         )
-                    
+
+                    # Layout consistente
                     fig.update_layout(
-                        hovermode="x unified",
-                        plot_bgcolor='rgba(0,0,0,0)',
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        margin=dict(l=20, r=20, t=40, b=20)
+                        font=dict(color='#1e293b', size=12),
+                        plot_bgcolor='white',
+                        paper_bgcolor='white',
+                        xaxis=dict(showgrid=True, gridcolor='#e2e8f0'),
+                        yaxis=dict(showgrid=True, gridcolor='#e2e8f0'),
+                        margin=dict(l=20, r=20, t=60, b=20),
+                        hoverlabel=dict(
+                            bgcolor="white",
+                            font_size=12,
+                            font_family="sans-serif"
+                        )
                     )
-                    
+
                     st.plotly_chart(fig, use_container_width=True)
-                
+
                 except Exception as e:
                     st.error(f"Erro ao gerar gráfico: {str(e)}")
                     st.dataframe(response["data"])
         
         elif output_type == "📝 Texto":
-            st.markdown('<div class="text-output">', unsafe_allow_html=True)
+            st.markdown('<div class="summary-container">', unsafe_allow_html=True)
             st.markdown(response["summary"])
             st.markdown('</div>', unsafe_allow_html=True)
         
