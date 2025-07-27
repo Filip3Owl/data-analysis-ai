@@ -25,21 +25,22 @@ st.set_page_config(
 )
 
 # Configurações de estilo para gráficos
-plt.rcParams['text.color'] = '#1e293b'
-plt.rcParams['axes.labelcolor'] = '#1e293b'
-plt.rcParams['xtick.color'] = '#1e293b'
-plt.rcParams['ytick.color'] = '#1e293b'
+plt.rcParams['text.color'] = '#2d3748'
+plt.rcParams['axes.labelcolor'] = '#2d3748'
+plt.rcParams['xtick.color'] = '#2d3748'
+plt.rcParams['ytick.color'] = '#2d3748'
 plt.rcParams['axes.facecolor'] = 'white'
 plt.rcParams['figure.facecolor'] = 'white'
 
-# CSS customizado melhorado
+# CSS customizado melhorado com cores mais visíveis
 st.markdown("""
 <style>
     :root {
         --primary: #667eea;
         --secondary: #764ba2;
         --light-bg: #f8fafc;
-        --dark-text: #1e293b;
+        --dark-text: #2d3748;
+        --medium-text: #4a5568;
         --light-text: #f8fafc;
         --card-bg: #ffffff;
         --container-bg: #f8fafc;
@@ -49,11 +50,13 @@ st.markdown("""
         --success: #10b981;
         --warning: #f59e0b;
         --error: #ef4444;
+        --accent: #3182ce;
     }
     
     body {
         background-color: var(--light-bg);
         font-family: 'Inter', sans-serif;
+        color: var(--dark-text);
     }
     
     .main-header {
@@ -115,6 +118,7 @@ st.markdown("""
     .summary-content {
         line-height: 1.6;
         color: var(--dark-text);
+        font-size: 0.95rem;
     }
     
     .summary-highlight {
@@ -161,6 +165,15 @@ st.markdown("""
     }
     
     .sort-controls {
+        background-color: var(--card-bg);
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 1rem;
+        color: var(--dark-text);
+    }
+    
+    .limit-controls {
         background-color: var(--card-bg);
         padding: 1rem;
         border-radius: 8px;
@@ -234,8 +247,7 @@ st.markdown("""
     }
     
     .result-subtitle {
-        color: var(--dark-text);
-        opacity: 0.8;
+        color: var(--medium-text);
         margin-bottom: 1.5rem;
         font-size: 1rem;
     }
@@ -299,7 +311,7 @@ st.markdown("""
         color: white !important;
         border-color: var(--primary) !important;
     }
-    
+               
     /* Texto da sidebar */
     .css-1d391kg .stMarkdown {
         color: var(--dark-text) !important;
@@ -310,13 +322,33 @@ st.markdown("""
         color: var(--dark-text) !important;
     }
     
+    /* Melhorias no texto geral */
+    .stMarkdown {
+        color: var(--dark-text) !important;
+    }
+    
+    /* Texto do selectbox e outros elementos */
+    .stSelectbox label {
+        color: var(--dark-text) !important;
+        font-weight: 500 !important;
+    }
+    
+    .stTextArea label {
+        color: var(--dark-text) !important;
+        font-weight: 500 !important;
+    }
+    
+    .stSlider label {
+        color: var(--dark-text) !important;
+        font-weight: 500 !important;
+    }
+    
     /* Footer styling */
     .footer {
         margin-top: 3rem;
         padding: 1.5rem 0;
         text-align: center;
-        color: var(--dark-text);
-        opacity: 0.8;
+        color: var(--medium-text);
         font-size: 0.9rem;
         border-top: 1px solid var(--border-color);
     }
@@ -324,6 +356,32 @@ st.markdown("""
     .footer a {
         color: var(--primary);
         text-decoration: none;
+    }
+    
+    /* Info boxes com cores mais visíveis */
+    .stAlert {
+        color: var(--dark-text) !important;
+    }
+    
+    /* Warning box específico para limite */
+    .limit-warning {
+        background-color: #fef3c7;
+        border: 1px solid #f59e0b;
+        border-radius: 6px;
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        color: #92400e;
+        font-size: 0.9rem;
+    }
+    
+    .limit-info {
+        background-color: #dbeafe;
+        border: 1px solid var(--accent);
+        border-radius: 6px;
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        color: #1e40af;
+        font-size: 0.9rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -423,7 +481,7 @@ with st.sidebar:
                             col_type = types[i] if i < len(types) else "N/A"
                             st.markdown(f"""
                             <div class='schema-info'>
-                                • <strong>{col}</strong> <span style='color: #666;'>({col_type})</span>
+                                • <strong>{col}</strong> <span style='color: #4a5568;'>({col_type})</span>
                             </div>
                             """, unsafe_allow_html=True)
                     else:
@@ -456,13 +514,47 @@ with st.container():
         label_visibility="collapsed"
     )
 
-    # Adicionando seleção de tipo de gráfico
-    chart_type = st.selectbox(
-        "📊 Selecione o tipo de gráfico (se aplicável):",
-        options=["Barras", "Linhas", "Pizza", "Área", "Dispersão"],
-        index=0,
-        help="Escolha o tipo de visualização para sua análise"
-    )
+    # Controles na mesma linha
+    col1, col2, col3 = st.columns([2, 2, 1])
+    
+    with col1:
+        # Adicionando seleção de tipo de gráfico
+        chart_type = st.selectbox(
+            "📊 Tipo de gráfico (se aplicável):",
+            options=["Barras", "Linhas", "Pizza", "Área", "Dispersão"],
+            index=0,
+            help="Escolha o tipo de visualização para sua análise"
+        )
+    
+    with col2:
+        # Limite de registros para análise
+        max_records = 10000  # Limite máximo para evitar sobrecarga
+        record_limit = st.slider(
+            "📄 Limite de registros para análise:",
+            min_value=10,
+            max_value=max_records,
+            value=1000,
+            step=50,
+            help="Defina quantos registros você quer analisar (máx: 10.000)"
+        )
+    
+    with col3:
+        # Mostrar informação sobre o limite
+        st.markdown(f"""
+        <div class="limit-info">
+            <strong>Limite:</strong><br>
+            {record_limit:,} registros
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Aviso sobre o limite
+    if record_limit >= max_records * 0.8:  # Aviso quando próximo do limite
+        st.markdown(f"""
+        <div class="limit-warning">
+            ⚠️ <strong>Atenção:</strong> Você selecionou {record_limit:,} registros. 
+            Para consultas muito grandes, o processamento pode ser mais lento.
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -508,7 +600,20 @@ def apply_table_sorting(df, sort_column, sort_order):
     ascending = True if sort_order == "Crescente (menor → maior)" else False
     return df.sort_values(by=sort_column, ascending=ascending)
 
-def generate_agent_insights(data, user_query, agents_manager):
+def apply_record_limit(sql_query, limit):
+    """Aplica limite de registros à query SQL"""
+    if limit and limit > 0:
+        # Verifica se já tem LIMIT na query
+        if "LIMIT" not in sql_query.upper():
+            sql_query += f" LIMIT {limit}"
+        else:
+            # Substitui o LIMIT existente
+            import re
+            sql_query = re.sub(r'LIMIT\s+\d+', f'LIMIT {limit}', sql_query, flags=re.IGNORECASE)
+    
+    return sql_query
+
+def generate_agent_insights(data, user_query, agents_manager, record_limit, total_available):
     """Gera insights elaborados pelo agente baseado nos dados"""
     if data.empty:
         return "Nenhum dado disponível para análise."
@@ -516,6 +621,9 @@ def generate_agent_insights(data, user_query, agents_manager):
     # Preparar contexto dos dados para o agente
     data_context = {
         "total_records": len(data),
+        "total_available": total_available,
+        "record_limit": record_limit,
+        "limited_analysis": len(data) >= record_limit and total_available > record_limit,
         "columns": list(data.columns),
         "numeric_columns": list(data.select_dtypes(include=['number']).columns),
         "categorical_columns": list(data.select_dtypes(include=['object']).columns),
@@ -540,13 +648,23 @@ def generate_agent_insights(data, user_query, agents_manager):
             categorical_insights[col] = {str(k): int(v) for k, v in top_values.items()}
     
     # Construir prompt para o agente gerar insights
+    limitation_note = ""
+    if data_context["limited_analysis"]:
+        limitation_note = f"""
+        IMPORTANTE: Esta análise foi limitada a {record_limit:,} registros de um total de {total_available:,} disponíveis.
+        Os insights representam uma amostra dos dados completos.
+        """
+    
     insights_prompt = f"""
     Analise os dados fornecidos e gere insights elaborados e relevantes:
 
     Consulta do usuário: {user_query}
     
+    {limitation_note}
+    
     Dados analisados:
-    - Total de registros: {data_context['total_records']:,}
+    - Registros analisados: {data_context['total_records']:,}
+    - Total disponível no banco: {data_context['total_available']:,}
     - Colunas disponíveis: {', '.join(data_context['columns'])}
     
     Estatísticas numéricas:
@@ -556,11 +674,12 @@ def generate_agent_insights(data, user_query, agents_manager):
     {json.dumps(categorical_insights, indent=2) if categorical_insights else 'Nenhuma coluna categórica encontrada'}
     
     Gere um resumo analítico com:
-    1. Principais descobertas dos dados
+    1. Principais descobertas dos dados {"(baseado na amostra)" if data_context["limited_analysis"] else ""}
     2. Tendências identificadas
     3. Insights de negócio relevantes
     4. Recomendações baseadas nos padrões encontrados
     
+    Se a análise foi limitada, mencione isso nas conclusões.
     Seja específico com números e percentuais quando relevante.
     Use uma linguagem clara e profissional.
     Limite a resposta a 300 palavras.
@@ -572,13 +691,16 @@ def generate_agent_insights(data, user_query, agents_manager):
         return insights_response.strip()
     except Exception as e:
         # Fallback para insights básicos se o agente falhar
-        return generate_basic_insights(data, numeric_stats, categorical_insights)
+        return generate_basic_insights(data, numeric_stats, categorical_insights, data_context["limited_analysis"], record_limit, total_available)
 
-def generate_basic_insights(data, numeric_stats, categorical_insights):
+def generate_basic_insights(data, numeric_stats, categorical_insights, is_limited, record_limit, total_available):
     """Gera insights básicos como fallback"""
     insights = []
     
-    insights.append(f"Esta análise examinou {len(data):,} registros com {len(data.columns)} variáveis.")
+    if is_limited:
+        insights.append(f"Esta análise examinou {len(data):,} registros (amostra de {total_available:,} disponíveis) com {len(data.columns)} variáveis.")
+    else:
+        insights.append(f"Esta análise examinou {len(data):,} registros com {len(data.columns)} variáveis.")
     
     if numeric_stats:
         main_numeric = list(numeric_stats.keys())[0]
@@ -599,7 +721,10 @@ def generate_basic_insights(data, numeric_stats, categorical_insights):
         percentage = (top_category[1] / total_cat) * 100
         insights.append(f"Em '{main_categorical}', '{top_category[0]}' representa {percentage:.1f}% dos casos ({top_category[1]:,} registros).")
     
-    insights.append("Estes dados fornecem uma base sólida para tomada de decisões estratégicas.")
+    if is_limited:
+        insights.append("Os resultados são baseados na amostra analisada e podem variar ao considerar todos os dados.")
+    else:
+        insights.append("Estes dados fornecem uma base sólida para tomada de decisões estratégicas.")
     
     return " ".join(insights)
 
@@ -671,11 +796,28 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
             interpretation["tipo_grafico"] = chart_type_mapping.get(chart_type, "barras")
 
             sql_query = st.session_state.agents.generate_sql(interpretation)
-            results = st.session_state.db.execute_query(sql_query)
+            
+            # Obter total de registros disponíveis antes de aplicar o limite
+            count_query = f"SELECT COUNT(*) as total FROM ({sql_query.split('LIMIT')[0].strip()}) as subquery"
+            try:
+                count_result = st.session_state.db.execute_query(count_query)
+                total_available = count_result.iloc[0]['total'] if count_result is not None and len(count_result) > 0 else 0
+            except:
+                # Fallback: executar query original sem LIMIT e contar
+                try:
+                    temp_query = sql_query.split('LIMIT')[0].strip()
+                    temp_result = st.session_state.db.execute_query(temp_query)
+                    total_available = len(temp_result) if temp_result is not None else 0
+                except:
+                    total_available = 0
+            
+            # Aplicar limite de registros à query
+            limited_sql_query = apply_record_limit(sql_query, record_limit)
+            results = st.session_state.db.execute_query(limited_sql_query)
 
             if results is None or (isinstance(results, pd.DataFrame) and len(results) == 0):
                 st.warning("⚠️ A consulta não retornou dados. Verificando possíveis problemas...")
-                st.code(sql_query, language="sql")
+                st.code(limited_sql_query, language="sql")
                 
                 try:
                     test_query = "SELECT COUNT(*) as total FROM clientes LIMIT 1"
@@ -701,7 +843,7 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
 
             # Gerar insights elaborados pelo agente
             with st.spinner("🧠 Gerando insights inteligentes..."):
-                agent_insights = generate_agent_insights(results, user_input, st.session_state.agents)
+                agent_insights = generate_agent_insights(results, user_input, st.session_state.agents, record_limit, total_available)
 
             response = st.session_state.agents.format_complete_response(
                 results, interpretation, user_input
@@ -709,9 +851,12 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
             
             # Substituir o summary original pelos insights do agente
             response["summary"] = agent_insights
+            response["total_available"] = total_available
+            response["record_limit"] = record_limit
+            response["is_limited"] = len(results) >= record_limit and total_available > record_limit
 
             st.session_state.last_response = response
-            st.session_state.last_query = sql_query
+            st.session_state.last_query = limited_sql_query
             st.session_state.interpretation = interpretation
 
         except Exception as e:
@@ -725,9 +870,9 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
                     st.write("**Interpretação gerada:**")
                     st.json(interpretation)
 
-                if 'sql_query' in locals():
+                if 'limited_sql_query' in locals():
                     st.write("**Query SQL gerada:**")
-                    st.code(sql_query, language="sql")
+                    st.code(limited_sql_query, language="sql")
 
                     st.write("**💡 Possíveis correções:**")
                     st.markdown("""
@@ -776,17 +921,35 @@ if 'last_response' in st.session_state:
         st.markdown(f'<h2 class="result-title">🔍 Resultados da Análise</h2>', unsafe_allow_html=True)
         st.markdown(f'<p class="result-subtitle">📌 {response["interpretation"]["intencao"]}</p>', unsafe_allow_html=True)
 
+        # Aviso sobre limitação se aplicável
+        if response.get("is_limited", False):
+            st.markdown(f"""
+            <div class="limit-warning">
+                📊 <strong>Análise Limitada:</strong> Exibindo {len(response['data']):,} de {response.get('total_available', 0):,} registros disponíveis.
+                Para ver todos os dados, aumente o limite de registros.
+            </div>
+            """, unsafe_allow_html=True)
+
         # Resumo formatado com insights do agente
         formatted_summary = format_analysis_summary(response["summary"], response["data"])
         st.markdown(formatted_summary, unsafe_allow_html=True)
 
-        st.info(f"📊 **{len(response['data'])}** registros encontrados | **{len(response['data'].columns)}** colunas")
+        # Info com detalhes dos registros
+        total_available = response.get('total_available', len(response['data']))
+        if response.get("is_limited", False):
+            st.info(f"📊 **{len(response['data']):,}** registros analisados de **{total_available:,}** disponíveis | **{len(response['data'].columns)}** colunas")
+        else:
+            st.info(f"📊 **{len(response['data'])}** registros encontrados | **{len(response['data'].columns)}** colunas")
 
         if len(response["data"]) > 0 and len(response["data"].select_dtypes(include=['number']).columns) > 0:
             metric_cols = st.columns(3)
 
             with metric_cols[0]:
-                st.metric("📋 Total de Registros", f"{response['total_records']:,}", delta=None)
+                if response.get("is_limited", False):
+                    st.metric("📋 Registros Analisados", f"{len(response['data']):,}", 
+                             delta=f"de {total_available:,} total")
+                else:
+                    st.metric("📋 Total de Registros", f"{response['total_records']:,}", delta=None)
 
             relevant_cols = get_relevant_metric_columns(response["data"])
 
@@ -797,9 +960,15 @@ if 'last_response' in st.session_state:
                     display_name = col_name.replace('_', ' ').title()
 
                     if 'valor' in col_name.lower() or 'preco' in col_name.lower():
-                        st.metric(f"💰 Total {display_name}", f"R$ {total_value:,.2f}", delta=None)
+                        label = f"💰 Total {display_name}"
+                        if response.get("is_limited", False):
+                            label += " (amostra)"
+                        st.metric(label, f"R$ {total_value:,.2f}", delta=None)
                     else:
-                        st.metric(f"📊 Total {display_name}", f"{total_value:,.0f}", delta=None)
+                        label = f"📊 Total {display_name}"
+                        if response.get("is_limited", False):
+                            label += " (amostra)"
+                        st.metric(label, f"{total_value:,.0f}", delta=None)
 
             if len(relevant_cols) >= 1:
                 with metric_cols[2]:
@@ -882,9 +1051,15 @@ if 'last_response' in st.session_state:
             
             if sort_column != "Não ordenar":
                 order_text = "crescente" if "Crescente" in sort_order else "decrescente"
-                st.info(f"📊 Tabela ordenada por **{sort_column}** em ordem **{order_text}** | Exibindo **{len(display_df):,}** de **{len(response['data']):,}** registros")
+                info_text = f"📊 Tabela ordenada por **{sort_column}** em ordem **{order_text}** | Exibindo **{len(display_df):,}** de **{len(response['data']):,}** registros"
+                if response.get("is_limited", False):
+                    info_text += f" (de {total_available:,} total no banco)"
+                st.info(info_text)
             else:
-                st.info(f"📊 Exibindo **{len(display_df):,}** de **{len(response['data']):,}** registros")
+                info_text = f"📊 Exibindo **{len(display_df):,}** de **{len(response['data']):,}** registros"
+                if response.get("is_limited", False):
+                    info_text += f" (de {total_available:,} total no banco)"
+                st.info(info_text)
 
             # Correção para exibir a tabela corretamente
             st.markdown('<div class="table-container">', unsafe_allow_html=True)
@@ -909,12 +1084,18 @@ if 'last_response' in st.session_state:
             
             with col_download2:
                 csv_all = response["data"].to_csv(index=False, encoding='utf-8-sig')
+                download_text = "📥 Exportar Dados Analisados"
+                help_text = "Baixe todos os dados da consulta atual"
+                if response.get("is_limited", False):
+                    download_text += f" ({len(response['data']):,} reg.)"
+                    help_text += f" (limitado a {len(response['data']):,} registros)"
+                
                 st.download_button(
-                    "📥 Exportar Todos os Dados",
+                    download_text,
                     csv_all,
                     file_name=f"analise_completa_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv",
-                    help="Baixe todos os dados originais da consulta"
+                    help=help_text
                 )
 
         elif output_type == "📊 Gráfico":
@@ -925,17 +1106,27 @@ if 'last_response' in st.session_state:
                     x_col = response["data"].columns[0]
                     y_col = response["data"].columns[1]
                     
+                    # Título do gráfico
+                    title_suffix = ""
+                    if response.get("is_limited", False):
+                        title_suffix = f" (amostra de {len(response['data']):,} registros)"
+                    
                     # Gera o gráfico com base na seleção do usuário
                     if chart_type == "Barras":
-                        fig = px.bar(response["data"], x=x_col, y=y_col, title=f"Gráfico de Barras: {y_col} por {x_col}")
+                        fig = px.bar(response["data"], x=x_col, y=y_col, 
+                                   title=f"Gráfico de Barras: {y_col} por {x_col}{title_suffix}")
                     elif chart_type == "Linhas":
-                        fig = px.line(response["data"], x=x_col, y=y_col, title=f"Gráfico de Linhas: {y_col} por {x_col}")
+                        fig = px.line(response["data"], x=x_col, y=y_col, 
+                                    title=f"Gráfico de Linhas: {y_col} por {x_col}{title_suffix}")
                     elif chart_type == "Pizza":
-                        fig = px.pie(response["data"], values=y_col, names=x_col, title=f"Gráfico de Pizza: Distribuição de {y_col}")
+                        fig = px.pie(response["data"], values=y_col, names=x_col, 
+                                   title=f"Gráfico de Pizza: Distribuição de {y_col}{title_suffix}")
                     elif chart_type == "Área":
-                        fig = px.area(response["data"], x=x_col, y=y_col, title=f"Gráfico de Área: {y_col} por {x_col}")
+                        fig = px.area(response["data"], x=x_col, y=y_col, 
+                                    title=f"Gráfico de Área: {y_col} por {x_col}{title_suffix}")
                     elif chart_type == "Dispersão":
-                        fig = px.scatter(response["data"], x=x_col, y=y_col, title=f"Gráfico de Dispersão: {y_col} vs {x_col}")
+                        fig = px.scatter(response["data"], x=x_col, y=y_col, 
+                                       title=f"Gráfico de Dispersão: {y_col} vs {x_col}{title_suffix}")
                     else:
                         fig = px.bar(response["data"], x=x_col, y=y_col)  # Default
 
