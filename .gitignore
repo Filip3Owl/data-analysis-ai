@@ -3,4 +3,3 @@
 data
 __pycache__
 .mypy_cache
-.flake8
