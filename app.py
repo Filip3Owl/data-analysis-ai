@@ -385,6 +385,16 @@ st.markdown("""
         font-size: 0.9rem;
     }
     
+    .chart-info {
+        background-color: #1e293b;
+        border: 1px solid var(--primary);
+        border-radius: 6px;
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        color: #60a5fa;
+        font-size: 0.9rem;
+    }
+    
     /* Melhorar contraste dos elementos do Streamlit */
     .stApp {
         background-color: var(--dark-bg) !important;
@@ -481,23 +491,23 @@ DB_PATH = PROJECT_ROOT / 'data' / 'clientes_completo.db'
 @st.cache_data
 def quick_database_check():
     if not DB_PATH.exists():
-        return False, f"Arquivo não encontrado: {DB_PATH}"
+        return False, f"Arquivo não encontrado: {DB_PATH}", 0
 
     if DB_PATH.stat().st_size == 0:
-        return False, "Arquivo do banco está vazio"
+        return False, "Arquivo do banco está vazio", 0
 
     try:
         with DatabaseManager(str(DB_PATH)) as db:
             health = db.health_check()
             if not health["connected"]:
-                return False, "Falha na conexão"
+                return False, "Falha na conexão", 0
             if health["total_records"] == 0:
-                return False, "Banco sem dados"
-            return True, f"✅ {health['tables_count']} tabelas, {health['total_records']:,} registros"
+                return False, "Banco sem dados", 0
+            return True, f"✅ {health['tables_count']} tabelas, {health['total_records']:,} registros", health["total_records"]
     except Exception as e:
-        return False, f"Erro: {str(e)}"
+        return False, f"Erro: {str(e)}", 0
 
-db_ok, db_message = quick_database_check()
+db_ok, db_message, total_records = quick_database_check()
 
 if not db_ok:
     st.error(f"❌ **Problema no banco de dados**: {db_message}")
@@ -590,50 +600,75 @@ with st.container():
     user_input = st.text_area(
         " ",
         height=100,
-        placeholder="Ex: Mostre os 10 clientes que mais compraram em formato de tabela",
-        help="Descreva sua análise em linguagem natural. Ex: 'Top 5 estados com mais vendas'",
+        placeholder="Ex: Mostre os 10 clientes que mais compraram em formato de tabela\nEx: Gráfico de barras dos top 5 estados por vendas",
+        help="Descreva sua análise em linguagem natural. Ex: 'Top 5 estados com mais vendas', 'Gráfico de barras das vendas por mês'",
         label_visibility="collapsed"
     )
 
     # Controles na mesma linha
-    col1, col2, col3 = st.columns([2, 2, 1])
+    col1, col2, col3 = st.columns([3, 2, 1])
     
     with col1:
-        # Adicionando seleção de tipo de gráfico
+        # Adicionando seleção de tipo de gráfico com informação clara
         chart_type = st.selectbox(
-            "📊 Tipo de gráfico (se aplicável):",
+            "📊 Tipo de gráfico (se solicitar visualização):",
             options=["Barras", "Linhas", "Pizza", "Área", "Dispersão"],
             index=0,
-            help="Escolha o tipo de visualização para sua análise"
+            help="IMPORTANTE: Selecione o tipo de gráfico que deseja plotar. Mencione 'gráfico' na sua descrição para usar esta opção."
         )
+        
+        # Informação sobre como usar gráficos
+        st.markdown(f"""
+        <div class="chart-info">
+            💡 <strong>Dica:</strong> Para gerar gráficos, inclua palavras como "gráfico", "chart" ou "visualização" na sua consulta.
+            Tipo selecionado: <strong>{chart_type}</strong>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
-        # Limite de registros para análise
-        max_records = 10000  # Limite máximo para evitar sobrecarga
+        # Limite de registros para análise com base no total disponível
+        max_records = min(total_records, 10000)  # Usa o total real do banco ou 10k, o menor
+        default_limit = min(1000, max_records)  # Padrão é 1000 ou o máximo disponível
+        
         record_limit = st.slider(
-            "📄 Limite de registros para análise:",
+            f"📄 Limite de registros (máx: {max_records:,}):",
             min_value=10,
             max_value=max_records,
-            value=1000,
+            value=default_limit,
             step=50,
-            help="Defina quantos registros você quer analisar (máx: 10.000)"
+            help=f"Defina quantos registros analisar. Total disponível no banco: {total_records:,}"
         )
     
     with col3:
-        # Mostrar informação sobre o limite
+        # Mostrar informação sobre o limite com contexto do banco
+        percentage = (record_limit / total_records) * 100 if total_records > 0 else 0
         st.markdown(f"""
         <div class="limit-info">
-            <strong>Limite:</strong><br>
-            {record_limit:,} registros
+            <strong>Analisará:</strong><br>
+            {record_limit:,} registros<br>
+            <small>({percentage:.1f}% do total)</small>
         </div>
         """, unsafe_allow_html=True)
 
-    # Aviso sobre o limite
-    if record_limit >= max_records * 0.8:  # Aviso quando próximo do limite
+    # Avisos contextuais sobre o limite
+    if record_limit >= total_records:
+        st.markdown(f"""
+        <div class="limit-info">
+            ✅ <strong>Análise Completa:</strong> Você selecionou analisar todos os {total_records:,} registros disponíveis no banco.
+        </div>
+        """, unsafe_allow_html=True)
+    elif record_limit >= max_records * 0.8:  # Aviso quando próximo do limite técnico
         st.markdown(f"""
         <div class="limit-warning">
-            ⚠️ <strong>Atenção:</strong> Você selecionou {record_limit:,} registros. 
+            ⚠️ <strong>Atenção:</strong> Você selecionou {record_limit:,} registros de {total_records:,} disponíveis. 
             Para consultas muito grandes, o processamento pode ser mais lento.
+        </div>
+        """, unsafe_allow_html=True)
+    elif record_limit < total_records * 0.1:  # Aviso quando muito baixo
+        st.markdown(f"""
+        <div class="limit-warning">
+            📊 <strong>Amostra Pequena:</strong> Analisando apenas {percentage:.1f}% dos dados ({record_limit:,} de {total_records:,}). 
+            Para análises mais abrangentes, considere aumentar o limite.
         </div>
         """, unsafe_allow_html=True)
 
@@ -858,7 +893,7 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
             # Determinar o tipo de saída com base no prompt do usuário
             if "tabela" in user_input.lower() or "lista" in user_input.lower():
                 output_type = "📋 Tabela"
-            elif "gráfico" in user_input.lower() or "grafico" in user_input.lower():
+            elif "gráfico" in user_input.lower() or "grafico" in user_input.lower() or "chart" in user_input.lower() or "visualização" in user_input.lower() or "visualizacao" in user_input.lower():
                 output_type = "📊 Gráfico"
             elif "resumo" in user_input.lower() or "texto" in user_input.lower():
                 output_type = "📝 Texto"
@@ -939,6 +974,7 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
             st.session_state.last_response = response
             st.session_state.last_query = limited_sql_query
             st.session_state.interpretation = interpretation
+            st.session_state.output_type = output_type
 
         except Exception as e:
             st.error(f"❌ Erro no processamento: {str(e)}")
@@ -975,6 +1011,7 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
 # Exibição dos resultados
 if 'last_response' in st.session_state:
     response = st.session_state.last_response
+    output_type = st.session_state.get('output_type', '📋 Tabela')
 
     if not response["success"]:
         st.markdown(f"""
@@ -985,22 +1022,12 @@ if 'last_response' in st.session_state:
         """, unsafe_allow_html=True)
         st.stop()
 
-    # Determinar o tipo de saída com base no prompt do usuário
-    if "tabela" in user_input.lower() or "lista" in user_input.lower():
-        output_type = "📋 Tabela"
-    elif "gráfico" in user_input.lower() or "grafico" in user_input.lower():
-        output_type = "📊 Gráfico"
-    elif "resumo" in user_input.lower() or "texto" in user_input.lower():
-        output_type = "📝 Texto"
-    else:
-        output_type = "📋 Tabela"
-
     # Container principal de resultados
     with st.container():
         st.markdown('<div class="output-container">', unsafe_allow_html=True)
 
         st.markdown(f'<h2 class="result-title">🔍 Resultados da Análise</h2>', unsafe_allow_html=True)
-        st.markdown(f'<p class="result-subtitle">📌 {response["interpretation"]["intencao"]}</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="result-subtitle">📌 {response["interpretation"]["intencao"]} | Tipo: {output_type}</p>', unsafe_allow_html=True)
 
         # Aviso sobre limitação se aplicável
         if response.get("is_limited", False):
@@ -1192,6 +1219,9 @@ if 'last_response' in st.session_state:
                     if response.get("is_limited", False):
                         title_suffix = f" (amostra de {len(response['data']):,} registros)"
                     
+                    # Informação sobre o tipo de gráfico selecionado
+                    st.info(f"📊 Gerando **{chart_type}** com dados: **{x_col}** vs **{y_col}**")
+                    
                     # Gera o gráfico com base na seleção do usuário
                     if chart_type == "Barras":
                         fig = px.bar(response["data"], x=x_col, y=y_col, 
@@ -1211,29 +1241,70 @@ if 'last_response' in st.session_state:
                     else:
                         fig = px.bar(response["data"], x=x_col, y=y_col)  # Default
 
+                    # Aplicar tema escuro ao gráfico
+                    fig.update_layout(
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        font_color='#f8fafc',
+                        title_font_color='#f8fafc'
+                    )
+                    
                     st.plotly_chart(fig, use_container_width=True)
+
+                    # Mostrar também os dados em tabela para referência
+                    with st.expander("📋 Ver dados utilizados no gráfico"):
+                        st.dataframe(response["data"], use_container_width=True)
 
                 except Exception as e:
                     st.warning(f"⚠️ Erro ao gerar gráfico interativo: {str(e)}")
                     st.info("📋 Exibindo dados em formato tabular")
                     st.dataframe(response["data"])
             else:
-                st.warning("⚠️ Dados insuficientes para gerar gráfico")
+                st.warning("⚠️ Dados insuficientes para gerar gráfico. É necessário pelo menos 2 colunas.")
+                st.info("💡 **Dica:** Certifique-se de que sua consulta retorne dados com pelo menos duas colunas (uma para X e uma para Y)")
                 st.dataframe(response["data"])
 
         elif output_type == "📝 Texto":
             st.subheader("📝 Resumo Textual")
-            st.write(response["summary"])
+            
+            # Exibir o resumo em formato mais elaborado
+            st.markdown(f"""
+            <div class="insight-box">
+                {response["summary"]}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Adicionar estatísticas básicas se disponíveis
+            if len(response["data"]) > 0:
+                st.subheader("📈 Estatísticas Complementares")
+                
+                # Estatísticas para colunas numéricas
+                numeric_cols = response["data"].select_dtypes(include=['number']).columns
+                if len(numeric_cols) > 0:
+                    st.write("**Colunas Numéricas:**")
+                    stats_df = response["data"][numeric_cols].describe()
+                    st.dataframe(stats_df, use_container_width=True)
+                
+                # Top valores para colunas categóricas
+                categorical_cols = response["data"].select_dtypes(include=['object']).columns
+                if len(categorical_cols) > 0:
+                    st.write("**Principais Valores por Categoria:**")
+                    for col in categorical_cols[:3]:  # Limitar a 3 colunas
+                        top_values = response["data"][col].value_counts().head(5)
+                        st.write(f"*{col}:*")
+                        for value, count in top_values.items():
+                            percentage = (count / len(response["data"])) * 100
+                            st.write(f"  - {value}: {count:,} ({percentage:.1f}%)")
 
         st.markdown('</div>', unsafe_allow_html=True)
 
 # Rodapé
 st.markdown("""
 <div class="footer">
-    <p>📅 Última atualização: {datetime} | 📊 {records} registros</p>
+    <p>📅 Última atualização: {datetime} | 📊 {records} registros no banco</p>
     <p>Desenvolvido por <a href="https://github.com/Filip3Owl" target="_blank">Filipe Rangel</a></p>
 </div>
 """.format(
     datetime=datetime.now().strftime('%d/%m/%Y %H:%M'),
-    records=st.session_state.get('last_response', {}).get('total_records', 0)
+    records=total_records
 ), unsafe_allow_html=True)
