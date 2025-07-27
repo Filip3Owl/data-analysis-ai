@@ -99,6 +99,32 @@ class DatabaseManager:
             logger.error(f"Query: {query}")
             return None
 
+    def get_table_columns(self, table_name: str) -> List[str]:
+        """
+        Obtém a lista de colunas de uma tabela específica.
+
+        Args:
+            table_name (str): Nome da tabela
+
+        Returns:
+            List[str]: Lista de nomes de colunas
+        """
+        if not self.connection:
+            if not self.connect():
+                return []
+
+        try:
+            query = f"PRAGMA table_info({table_name})"
+            result = self.execute_query(query)
+            
+            if result is not None and len(result) > 0:
+                return result['name'].tolist()
+            return []
+            
+        except Exception as e:
+            logger.error(f"Erro ao obter colunas da tabela {table_name}: {e}")
+            return []
+
     def get_database_schema(self) -> Dict:
         """
         Obtém o schema completo do banco de dados.

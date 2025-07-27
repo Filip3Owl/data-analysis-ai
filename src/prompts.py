@@ -4,13 +4,47 @@ from langchain.prompts import PromptTemplate
 INTERPRETATION_PROMPT = PromptTemplate(
     input_variables=["user_input"],
     template="""
-    Você é um especialista em SQL e análise de dados. Converta a solicitação do usuário em uma estrutura JSON usando APENAS estas tabelas:
+   Você é um especialista em SQL e análise de dados. Converta a solicitação do usuário em uma estrutura JSON usando APENAS estas tabelas:
 
-    ### Estrutura do Banco de Dados:
-    - clientes(id, nome, email, idade, cidade, estado, profissao, genero)
-    - compras(id, cliente_id, data_compra, valor, categoria, canal)
-    - suporte(id, cliente_id, data_contato, tipo_contato, resolvido, canal)
-    - campanhas_marketing(id, cliente_id, nome_campanha, data_envio, interagiu, canal)
+    ### 📊 Estrutura do Banco de Dados:
+
+1. clientes (
+    id INTEGER,
+    nome TEXT,
+    email TEXT,
+    idade INTEGER,
+    cidade TEXT,
+    estado TEXT,
+    profissao TEXT,
+    genero TEXT
+)
+
+2. compras (
+    id INTEGER,
+    cliente_id INTEGER,
+    data_compra TEXT (formato ISO: YYYY-MM-DD),
+    valor REAL,
+    categoria TEXT,
+    canal TEXT
+)
+
+3. suporte (
+    id INTEGER,
+    cliente_id INTEGER,
+    data_contato TEXT (formato ISO: YYYY-MM-DD),
+    tipo_contato TEXT,
+    resolvido BOOLEAN,
+    canal TEXT
+)
+
+4. campanhas_marketing (
+    id INTEGER,
+    cliente_id INTEGER,
+    nome_campanha TEXT,
+    data_envio TEXT (formato ISO: YYYY-MM-DD),
+    interagiu BOOLEAN,
+    canal TEXT
+)
 
     ### Solicitação do Usuário:
     "{user_input}"
@@ -46,7 +80,7 @@ INTERPRETATION_PROMPT = PromptTemplate(
         "limite": 5,
         "formato_saida": "tabela"
     }}
-    """
+    """ 
 )
 
 # Prompt para geração de SQL
@@ -56,22 +90,56 @@ SQL_PROMPT = PromptTemplate(
     Você é um especialista em SQLite. Gere uma query SQL válida seguindo estas regras:
 
     ### Tabelas Disponíveis:
-    - clientes(id, nome, email, idade, cidade, estado, profissao, genero)
-    - compras(id, cliente_id, data_compra, valor, categoria, canal)
-    - suporte(id, cliente_id, data_contato, tipo_contato, resolvido, canal)
-    - campanhas_marketing(id, cliente_id, nome_campanha, data_envio, interagiu, canal)
+    1. clientes (
+    id INTEGER,
+    nome TEXT,
+    email TEXT,
+    idade INTEGER,
+    cidade TEXT,
+    estado TEXT,
+    profissao TEXT,
+    genero TEXT
+)
+
+2. compras (
+    id INTEGER,
+    cliente_id INTEGER,
+    data_compra TEXT (formato ISO: YYYY-MM-DD),
+    valor REAL,
+    categoria TEXT,
+    canal TEXT
+)
+
+3. suporte (
+    id INTEGER,
+    cliente_id INTEGER,
+    data_contato TEXT (formato ISO: YYYY-MM-DD),
+    tipo_contato TEXT,
+    resolvido BOOLEAN,
+    canal TEXT
+)
+
+4. campanhas_marketing (
+    id INTEGER,
+    cliente_id INTEGER,
+    nome_campanha TEXT,
+    data_envio TEXT (formato ISO: YYYY-MM-DD),
+    interagiu BOOLEAN,
+    canal TEXT
 
     ### Relacionamentos (JOINs):
-    - compras.cliente_id = clientes.id
+    - compras.cliente_id = clientes.id 
     - suporte.cliente_id = clientes.id
     - campanhas_marketing.cliente_id = clientes.id
 
     ### Regras Importantes:
-    1. Use INNER JOIN quando precisar de dados relacionados
-    2. Use aliases para tabelas (c para clientes, co para compras, etc.)
-    3. Para datas use: strftime('%Y', data_compra) = '2024'
-    4. Para valores monetários use: ROUND(SUM(valor), 2)
-    5. Para percentuais use: ROUND((COUNT(*) * 100.0 / total), 2)
+    ### 📌 Regras Importantes:
+    1. Use `INNER JOIN` sempre que precisar combinar dados entre tabelas relacionadas
+    2. Use **aliases** para tabelas para tornar o SQL mais legível (ex: `c` para `clientes`, `co` para `compras`)
+    3. Para filtrar por ano em campos de data (armazenados como `TEXT`), use: `strftime('%Y', nome_coluna_data) = '2024'`
+    4. Para somar valores monetários com 2 casas decimais, use: `ROUND(SUM(valor), 2) AS total_valor`
+    5. Para calcular percentuais, use: `ROUND((COUNT(*) * 100.0 / total), 2)`, onde `total` pode vir de uma **subconsulta** ou **CTE**
+
 
     ### Interpretação da Solicitação:
     {interpretation}
