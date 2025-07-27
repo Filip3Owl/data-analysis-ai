@@ -508,35 +508,103 @@ def apply_table_sorting(df, sort_column, sort_order):
     ascending = True if sort_order == "Crescente (menor → maior)" else False
     return df.sort_values(by=sort_column, ascending=ascending)
 
-def format_analysis_summary(summary_text, data):
-    """Formata o resumo da análise para melhor legibilidade"""
-    # Adiciona insights baseados nos dados
+def generate_agent_insights(data, user_query, agents_manager):
+    """Gera insights elaborados pelo agente baseado nos dados"""
+    if data.empty:
+        return "Nenhum dado disponível para análise."
+    
+    # Preparar contexto dos dados para o agente
+    data_context = {
+        "total_records": len(data),
+        "columns": list(data.columns),
+        "numeric_columns": list(data.select_dtypes(include=['number']).columns),
+        "categorical_columns": list(data.select_dtypes(include=['object']).columns),
+    }
+    
+    # Calcular estatísticas básicas se houver colunas numéricas
+    numeric_stats = {}
+    for col in data_context["numeric_columns"]:
+        numeric_stats[col] = {
+            "total": float(data[col].sum()),
+            "average": float(data[col].mean()),
+            "max": float(data[col].max()),
+            "min": float(data[col].min()),
+            "std": float(data[col].std()) if len(data) > 1 else 0
+        }
+    
+    # Top valores para colunas categóricas
+    categorical_insights = {}
+    for col in data_context["categorical_columns"]:
+        if col in data.columns:
+            top_values = data[col].value_counts().head(3).to_dict()
+            categorical_insights[col] = {str(k): int(v) for k, v in top_values.items()}
+    
+    # Construir prompt para o agente gerar insights
+    insights_prompt = f"""
+    Analise os dados fornecidos e gere insights elaborados e relevantes:
+
+    Consulta do usuário: {user_query}
+    
+    Dados analisados:
+    - Total de registros: {data_context['total_records']:,}
+    - Colunas disponíveis: {', '.join(data_context['columns'])}
+    
+    Estatísticas numéricas:
+    {json.dumps(numeric_stats, indent=2) if numeric_stats else 'Nenhuma coluna numérica encontrada'}
+    
+    Principais valores categóricos:
+    {json.dumps(categorical_insights, indent=2) if categorical_insights else 'Nenhuma coluna categórica encontrada'}
+    
+    Gere um resumo analítico com:
+    1. Principais descobertas dos dados
+    2. Tendências identificadas
+    3. Insights de negócio relevantes
+    4. Recomendações baseadas nos padrões encontrados
+    
+    Seja específico com números e percentuais quando relevante.
+    Use uma linguagem clara e profissional.
+    Limite a resposta a 300 palavras.
+    """
+    
+    try:
+        # Usar o agente para gerar insights
+        insights_response = agents_manager.llm(insights_prompt)
+        return insights_response.strip()
+    except Exception as e:
+        # Fallback para insights básicos se o agente falhar
+        return generate_basic_insights(data, numeric_stats, categorical_insights)
+
+def generate_basic_insights(data, numeric_stats, categorical_insights):
+    """Gera insights básicos como fallback"""
     insights = []
     
-    if isinstance(data, pd.DataFrame) and not data.empty:
-        # Identifica colunas numéricas
-        numeric_cols = data.select_dtypes(include=['number']).columns
-        
-        if len(numeric_cols) > 0:
-            main_numeric_col = numeric_cols[0]
-            
-            # Calcula métricas básicas
-            total = data[main_numeric_col].sum()
-            avg = data[main_numeric_col].mean()
-            max_val = data[main_numeric_col].max()
-            min_val = data[main_numeric_col].min()
-            
-            insights.append(f"""
-            <div class="summary-content">
-                <p><strong>Principais métricas:</strong></p>
-                <p>• Total: {total:,.2f}</p>
-                <p>• Média: {avg:,.2f}</p> 
-                <p>• Valor máximo: {max_val:,.2f}</p>
-                <p>• Valor mínimo: {min_val:,.2f}</p>
-            </div>
-            """)
+    insights.append(f"Esta análise examinou {len(data):,} registros com {len(data.columns)} variáveis.")
     
-    # Formata o texto do resumo
+    if numeric_stats:
+        main_numeric = list(numeric_stats.keys())[0]
+        stats = numeric_stats[main_numeric]
+        insights.append(f"A variável '{main_numeric}' apresenta um total de {stats['total']:,.2f} com média de {stats['average']:,.2f}.")
+        
+        if stats['std'] > 0:
+            cv = (stats['std'] / stats['average']) * 100 if stats['average'] > 0 else 0
+            if cv > 50:
+                insights.append(f"Observa-se alta variabilidade nos dados ({cv:.1f}% de coeficiente de variação).")
+            else:
+                insights.append(f"Os dados apresentam variabilidade moderada ({cv:.1f}% de coeficiente de variação).")
+    
+    if categorical_insights:
+        main_categorical = list(categorical_insights.keys())[0]
+        top_category = list(categorical_insights[main_categorical].items())[0]
+        total_cat = sum(categorical_insights[main_categorical].values())
+        percentage = (top_category[1] / total_cat) * 100
+        insights.append(f"Em '{main_categorical}', '{top_category[0]}' representa {percentage:.1f}% dos casos ({top_category[1]:,} registros).")
+    
+    insights.append("Estes dados fornecem uma base sólida para tomada de decisões estratégicas.")
+    
+    return " ".join(insights)
+
+def format_analysis_summary(agent_insights, data):
+    """Formata o resumo da análise com insights do agente"""
     formatted_summary = f"""
     <div class="summary-container">
         <div class="summary-header">
@@ -544,8 +612,7 @@ def format_analysis_summary(summary_text, data):
             <div class="summary-title">Resumo da Análise</div>
         </div>
         <div class="summary-content">
-            {summary_text}
-            {"".join(insights)}
+            {agent_insights}
         </div>
     </div>
     """
@@ -632,9 +699,16 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
 
                 st.stop()
 
+            # Gerar insights elaborados pelo agente
+            with st.spinner("🧠 Gerando insights inteligentes..."):
+                agent_insights = generate_agent_insights(results, user_input, st.session_state.agents)
+
             response = st.session_state.agents.format_complete_response(
                 results, interpretation, user_input
             )
+            
+            # Substituir o summary original pelos insights do agente
+            response["summary"] = agent_insights
 
             st.session_state.last_response = response
             st.session_state.last_query = sql_query
@@ -702,7 +776,7 @@ if 'last_response' in st.session_state:
         st.markdown(f'<h2 class="result-title">🔍 Resultados da Análise</h2>', unsafe_allow_html=True)
         st.markdown(f'<p class="result-subtitle">📌 {response["interpretation"]["intencao"]}</p>', unsafe_allow_html=True)
 
-        # Resumo formatado
+        # Resumo formatado com insights do agente
         formatted_summary = format_analysis_summary(response["summary"], response["data"])
         st.markdown(formatted_summary, unsafe_allow_html=True)
 
