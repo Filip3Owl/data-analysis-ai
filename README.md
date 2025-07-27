@@ -368,7 +368,7 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 
 ## 🙏 Agradecimentos
 
-- Franq OpenBank pela excelente desafio
+- Franq OpenBank pelo excelente desafio
 - Streamlit pela excelente framework
 - Plotly pelos gráficos interativos
 - Comunidade Python pelo suporte
