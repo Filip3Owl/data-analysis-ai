@@ -40,7 +40,7 @@ streamlit run app.py
 
 O sistema possui um fluxo de agentes IA que recebem comandos do usuário, interpretam a intenção e executam ações com ferramentas específicas (como consultas SQL). Veja o diagrama abaixo:
 
-<img src="pngs/agents_flow.png" alt="Fluxo dos agentes" width="500">
+<img src="pngs/agents_flow.png" alt="Fluxo dos agentes" width="200">
 
 ---
 
