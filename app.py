@@ -619,94 +619,94 @@ with st.sidebar:
     # Exemplos de consultas - EXPANDIDOS
     st.subheader("💡 Exemplos de Consultas")
     exemplos = {
-        "Top 10 clientes por vendas": "📋 Tabela",
-        "Clientes por estado": "📊 Gráfico",
-        "Vendas dos últimos 30 dias": "📊 Gráfico",
-        "Resumo geral de clientes": "📝 Texto",
-        "Clientes que compraram via app": "📋 Tabela",
-        "5 estados com mais clientes via app em maio": "📋 Tabela",
-        "Clientes em campanhas WhatsApp 2024": "📋 Tabela",
-        "Categorias com mais compras por cliente": "📊 Gráfico",
-        "Reclamações não resolvidas por canal": "📊 Gráfico",
-        "Evolução de vendas mensais": "📊 Gráfico",
-        "Top 10 produtos mais vendidos": "📋 Tabela",
-        "Distribuição de clientes por idade": "📊 Gráfico",
-        "Análise de satisfação por região": "📊 Gráfico"
+        # Análises de Clientes
+        "Distribuição de clientes por faixa etária": "📊 Gráfico",
+        "Clientes por estado e gênero": "📊 Gráfico",
+        "Top 10 cidades com mais clientes": "📋 Tabela",
+        "Profissões mais comuns dos clientes": "📊 Gráfico",
+        
+        # Análises de Compras
+        "Vendas totais por mês em 2024": "📊 Gráfico",
+        "Top 5 categorias mais vendidas": "📋 Tabela",
+        "Ticket médio por canal de venda": "📋 Tabela",
+        "Vendas por dia da semana": "📊 Gráfico",
+        
+        # Análises de Suporte
+        "Chamados não resolvidos por tipo": "📊 Gráfico",
+        "Tempo médio para resolução por canal": "📋 Tabela",
+        "Eficiência na resolução por mês": "📊 Gráfico",
+        
+        # Análises de Campanhas
+        "Taxa de interação por campanha": "📊 Gráfico",
+        "Conversão de campanhas por canal": "📋 Tabela",
+        "Clientes que interagiram mas não compraram": "📋 Tabela",
+        
+        # Análises Cruzadas
+        "Relação entre idade e valor médio de compra": "📊 Gráfico",
+        "Clientes que compram mais por categoria": "📋 Tabela",
+        "Eficácia de campanhas por região": "📊 Gráfico"
     }
 
     # Organizar exemplos em categorias
-    st.markdown("**📊 Análises de Vendas:**")
-    vendas_exemplos = {k: v for k, v in exemplos.items() if any(
-        palavra in k.lower() for palavra in ['vendas', 'produto', 'top', 'cliente'])}
-
-    for exemplo, tipo in vendas_exemplos.items():
-        # Verificar se este exemplo está selecionado
+    st.markdown("**👥 Análises de Clientes:**")
+    clientes_exemplos = {k: v for k, v in exemplos.items() if "cliente" in k.lower() or "idade" in k.lower() or "gênero" in k.lower() or "cidade" in k.lower() or "profiss" in k.lower()}
+    
+    for exemplo, tipo in clientes_exemplos.items():
         is_selected = st.session_state.selected_example == exemplo
-        button_key = f"exemplo_vendas_{exemplo}"
-        
-        if st.button(f"{tipo} {exemplo}", key=button_key):
-            st.session_state.exemplo_selecionado = exemplo
-            st.session_state.output_type = tipo
-            st.session_state.selected_example = exemplo
-            # Forçar rerun para atualizar a interface
-            st.rerun()
-
-    st.markdown("**📱 Análises de Canais:**")
-    canais_exemplos = {
-        k: v for k,
-        v in exemplos.items() if any(
-            palavra in k.lower() for palavra in [
-                'app',
-                'whatsapp',
-                'canal',
-                'reclamações'])}
-
-    for exemplo, tipo in canais_exemplos.items():
-        is_selected = st.session_state.selected_example == exemplo
-        button_key = f"exemplo_canais_{exemplo}"
-        
+        button_key = f"exemplo_clientes_{exemplo}"
         if st.button(f"{tipo} {exemplo}", key=button_key):
             st.session_state.exemplo_selecionado = exemplo
             st.session_state.output_type = tipo
             st.session_state.selected_example = exemplo
             st.rerun()
 
-    st.markdown("**🌍 Análises Geográficas:**")
-    geo_exemplos = {k: v for k, v in exemplos.items() if any(
-        palavra in k.lower() for palavra in ['estado', 'região', 'distribuição'])}
-
-    for exemplo, tipo in geo_exemplos.items():
+    st.markdown("**🛒 Análises de Compras:**")
+    compras_exemplos = {k: v for k, v in exemplos.items() if "venda" in k.lower() or "compra" in k.lower() or "ticket" in k.lower() or "categoria" in k.lower()}
+    
+    for exemplo, tipo in compras_exemplos.items():
         is_selected = st.session_state.selected_example == exemplo
-        button_key = f"exemplo_geo_{exemplo}"
-        
+        button_key = f"exemplo_compras_{exemplo}"
         if st.button(f"{tipo} {exemplo}", key=button_key):
             st.session_state.exemplo_selecionado = exemplo
             st.session_state.output_type = tipo
             st.session_state.selected_example = exemplo
             st.rerun()
 
-    st.markdown("**📈 Análises Temporais:**")
-    tempo_exemplos = {k: v for k, v in exemplos.items() if any(palavra in k.lower(
-    ) for palavra in ['maio', '2024', 'evolução', 'mensais', 'dias'])}
-
-    for exemplo, tipo in tempo_exemplos.items():
+    st.markdown("**🆘 Análises de Suporte:**")
+    suporte_exemplos = {k: v for k, v in exemplos.items() if "suporte" in k.lower() or "chamado" in k.lower() or "resolu" in k.lower()}
+    
+    for exemplo, tipo in suporte_exemplos.items():
         is_selected = st.session_state.selected_example == exemplo
-        button_key = f"exemplo_tempo_{exemplo}"
-        
+        button_key = f"exemplo_suporte_{exemplo}"
         if st.button(f"{tipo} {exemplo}", key=button_key):
             st.session_state.exemplo_selecionado = exemplo
             st.session_state.output_type = tipo
             st.session_state.selected_example = exemplo
             st.rerun()
 
-# Interface principal
-st.header("🎯 Faça sua Análise")
+    st.markdown("**📢 Análises de Campanhas:**")
+    campanhas_exemplos = {k: v for k, v in exemplos.items() if "campanha" in k.lower() or "intera" in k.lower() or "convers" in k.lower()}
+    
+    for exemplo, tipo in campanhas_exemplos.items():
+        is_selected = st.session_state.selected_example == exemplo
+        button_key = f"exemplo_campanhas_{exemplo}"
+        if st.button(f"{tipo} {exemplo}", key=button_key):
+            st.session_state.exemplo_selecionado = exemplo
+            st.session_state.output_type = tipo
+            st.session_state.selected_example = exemplo
+            st.rerun()
 
-# Inicializar output_type se não existir
-if 'output_type' not in st.session_state:
-    st.session_state.output_type = "🔍 Automático"
-
-output_type = st.session_state.get('output_type', "🔍 Automático")
+    st.markdown("**🔗 Análises Cruzadas:**")
+    cruzadas_exemplos = {k: v for k, v in exemplos.items() if "rela" in k.lower() or "efici" in k.lower() or "cruzada" in k.lower()}
+    
+    for exemplo, tipo in cruzadas_exemplos.items():
+        is_selected = st.session_state.selected_example == exemplo
+        button_key = f"exemplo_cruzadas_{exemplo}"
+        if st.button(f"{tipo} {exemplo}", key=button_key):
+            st.session_state.exemplo_selecionado = exemplo
+            st.session_state.output_type = tipo
+            st.session_state.selected_example = exemplo
+            st.rerun()
 
 # Container para área de entrada
 with st.container():
@@ -811,8 +811,8 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
                 st.session_state.llm = OpenAI(
                     openai_api_key=openai_key,
                     temperature=0.3,
-                    max_tokens=2000,
-                    model="gpt-3.5-turbo-instruct"
+                    max_tokens=10000,
+                    model="o4-mini-2025-04-16"
                 )
                 st.session_state.agents = AgentsManager(
                     st.session_state.llm,
@@ -831,13 +831,15 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
             # Interpretação da solicitação
             interpretation = st.session_state.agents.interpret_request(processed_input)
 
-            # Sobrescrever tipo de saída se não for automático
+            # Determinar o tipo de saída baseado no estado da sessão ou na interpretação automática
+            output_type = st.session_state.get('output_type', '🔍 Automático')
+            
             if output_type != "🔍 Automático":
                 interpretation["tipo_grafico"] = {
                     "📋 Tabela": "tabela",
                     "📊 Gráfico": chart_type.lower(),
                     "📝 Texto": "texto"
-                }[output_type]
+                }.get(output_type, "tabela")
 
             # Geração SQL
             sql_query = st.session_state.agents.generate_sql(interpretation)
@@ -997,6 +999,8 @@ if 'last_response' in st.session_state:
         st.stop()
 
     # Determinar o tipo de saída
+    output_type = st.session_state.get('output_type', '🔍 Automático')
+    
     if output_type == "🔍 Automático":
         output_type = {
             "tabela": "📋 Tabela",

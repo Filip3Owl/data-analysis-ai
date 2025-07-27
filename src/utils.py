@@ -222,8 +222,7 @@ class AgentsManager:
         categorical_cols = df.select_dtypes(
             include=['object', 'category']).columns.tolist()
 
-        # Para gráficos de barras e pizza: precisa de pelo menos 1 categórica e 1
-        # numérica
+        # Para gráficos de barras e pizza: precisa de pelo menos 1 categórica e 1 numérica
         if chart_type in ["barras", "pizza"]:
             if len(numeric_cols) == 0:
                 # Se não há colunas numéricas, criar uma contagem
@@ -363,10 +362,17 @@ class AgentsManager:
         """Cria gráficos de barras matplotlib e plotly."""
         try:
             # Garantir que temos dados válidos
-            if df[y_col].dtype not in [np.number]:
-                # Tentar converter para numérico
-                df[y_col] = pd.to_numeric(df[y_col], errors='coerce')
-                df = df.dropna(subset=[y_col])
+            if y_col != 'count':  # Não converter coluna de contagem
+                if df[y_col].dtype not in [np.number]:
+                    # Tentar converter para numérico
+                    try:
+                        df[y_col] = pd.to_numeric(df[y_col], errors='coerce')
+                        df = df.dropna(subset=[y_col])
+                    except Exception as e:
+                        self.logger.warning(f"Não foi possível converter {y_col} para numérico: {e}")
+                        # Se não puder converter, usar contagem
+                        df = df.groupby(x_col).size().reset_index(name='count')
+                        y_col = 'count'
 
             if df.empty:
                 raise ValueError("Nenhum dado numérico válido após conversão")
@@ -402,8 +408,8 @@ class AgentsManager:
                     x_col.replace(
                         '_',
                         ' ').title()}",
-                color=y_col,
-                color_continuous_scale="viridis")
+                color=y_col if y_col != 'count' else None,
+                color_continuous_scale="viridis" if y_col != 'count' else None)
             fig_plotly.update_traces(texttemplate='%{y:,.0f}', textposition='outside')
             fig_plotly.update_layout(showlegend=False)
 
@@ -418,9 +424,17 @@ class AgentsManager:
         """Cria gráficos de pizza matplotlib e plotly."""
         try:
             # Garantir que temos dados válidos
-            if df[y_col].dtype not in [np.number]:
-                df[y_col] = pd.to_numeric(df[y_col], errors='coerce')
-                df = df.dropna(subset=[y_col])
+            if y_col != 'count':  # Não converter coluna de contagem
+                if df[y_col].dtype not in [np.number]:
+                    # Tentar converter para numérico
+                    try:
+                        df[y_col] = pd.to_numeric(df[y_col], errors='coerce')
+                        df = df.dropna(subset=[y_col])
+                    except Exception as e:
+                        self.logger.warning(f"Não foi possível converter {y_col} para numérico: {e}")
+                        # Se não puder converter, usar contagem
+                        df = df.groupby(x_col).size().reset_index(name='count')
+                        y_col = 'count'
 
             if df.empty or df[y_col].sum() == 0:
                 raise ValueError("Nenhum dado numérico válido para gráfico de pizza")
@@ -456,8 +470,14 @@ class AgentsManager:
         try:
             # Garantir que y é numérico
             if df[y_col].dtype not in [np.number]:
-                df[y_col] = pd.to_numeric(df[y_col], errors='coerce')
-                df = df.dropna(subset=[y_col])
+                try:
+                    df[y_col] = pd.to_numeric(df[y_col], errors='coerce')
+                    df = df.dropna(subset=[y_col])
+                except Exception as e:
+                    self.logger.warning(f"Não foi possível converter {y_col} para numérico: {e}")
+                    # Se não puder converter, usar contagem
+                    df = df.groupby(x_col).size().reset_index(name='count')
+                    y_col = 'count'
 
             if df.empty:
                 raise ValueError("Nenhum dado numérico válido para gráfico de linha")
@@ -496,7 +516,12 @@ class AgentsManager:
             # Garantir que ambas as colunas são numéricas
             for col in [x_col, y_col]:
                 if df[col].dtype not in [np.number]:
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                    try:
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                    except Exception as e:
+                        self.logger.warning(f"Não foi possível converter {col} para numérico: {e}")
+                        # Se não puder converter, usar fallback
+                        return self._create_fallback_chart(df)
 
             df = df.dropna(subset=[x_col, y_col])
 
