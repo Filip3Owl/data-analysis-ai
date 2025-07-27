@@ -100,6 +100,4 @@ O sistema possui um fluxo de agentes IA que recebem comandos do usuário, interp
 
 Filipe Rangel – Projeto para processo seletivo de estágio.
 
-```
-
 ---
