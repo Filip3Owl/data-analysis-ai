@@ -452,23 +452,7 @@ with st.container():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Opções avançadas
-with st.expander("⚙️ Opções Avançadas"):
-    col1, col2 = st.columns(2)
-
-    with col1:
-        show_debug = st.checkbox("🔍 Mostrar detalhes técnicos", value=False)
-        auto_chart = st.checkbox("📊 Gerar gráfico automaticamente", value=True)
-
-    with col2:
-        chart_type = st.selectbox(
-            "📈 Tipo de gráfico preferido",
-            ["Automático", "Barras", "Pizza", "Linha", "Scatter", "Apenas Tabela"]
-        )
-
 # Função para pré-processar a consulta do usuário
-
-
 def preprocess_user_query(query):
     """Melhora a consulta do usuário para melhor interpretação pela IA"""
 
@@ -561,11 +545,21 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
             interpretation = st.session_state.agents.interpret_request(
                 processed_input)
 
+            # Determinar o tipo de saída com base no prompt do usuário
+            if "tabela" in user_input.lower() or "lista" in user_input.lower():
+                output_type = "📋 Tabela"
+            elif "gráfico" in user_input.lower() or "grafico" in user_input.lower():
+                output_type = "📊 Gráfico"
+            elif "resumo" in user_input.lower() or "texto" in user_input.lower():
+                output_type = "📝 Texto"
+            else:
+                output_type = "🔍 Automático"
+
             # Sobrescrever tipo de saída se não for automático
             if output_type != "🔍 Automático":
                 interpretation["tipo_grafico"] = {
                     "📋 Tabela": "tabela",
-                    "📊 Gráfico": chart_type.lower(),
+                    "📊 Gráfico": "barras",  # Definir como barras por padrão
                     "📝 Texto": "texto"
                 }[output_type]
 
@@ -671,25 +665,15 @@ if 'last_response' in st.session_state:
         """, unsafe_allow_html=True)
         st.stop()
 
-    # Determinar o tipo de saída
-    if output_type == "🔍 Automático":
-        output_type = {
-            "tabela": "📋 Tabela",
-            "barras": "📊 Gráfico",
-            "pizza": "📊 Gráfico",
-            "linha": "📊 Gráfico",
-            "texto": "📝 Texto"
-        }.get(st.session_state.interpretation.get("tipo_grafico", "tabela"), "📋 Tabela")
-
-        # Definir chart_type baseado na interpretação automática
-        if output_type == "📊 Gráfico":
-            auto_chart_type = st.session_state.interpretation.get(
-                "tipo_grafico", "barras")
-            chart_type = {
-                "barras": "Barras",
-                "pizza": "Pizza",
-                "linha": "Linha"
-            }.get(auto_chart_type, "Barras")
+    # Determinar o tipo de saída com base no prompt do usuário
+    if "tabela" in user_input.lower() or "lista" in user_input.lower():
+        output_type = "📋 Tabela"
+    elif "gráfico" in user_input.lower() or "grafico" in user_input.lower():
+        output_type = "📊 Gráfico"
+    elif "resumo" in user_input.lower() or "texto" in user_input.lower():
+        output_type = "📝 Texto"
+    else:
+        output_type = "📋 Tabela"  # Padrão para tabela se não for especificado
 
     # Container principal de resultados
     with st.container():
@@ -797,27 +781,8 @@ if 'last_response' in st.session_state:
 
             st.stop()
 
-        # Detalhes técnicos (se habilitado)
-        if show_debug:
-            with st.expander("🔍 Detalhes Técnicos", expanded=True):
-                st.subheader("Interpretação")
-                st.json(st.session_state.interpretation)
-
-                st.subheader("Query SQL")
-                st.code(st.session_state.last_query, language="sql")
-
-                st.subheader("Dados Retornados")
-                st.write(
-                    f"Linhas: {len(response['data'])}, Colunas: {len(response['data'].columns)}")
-                if len(response["data"]) > 0:
-                    st.write("Primeiras 5 linhas:")
-                    st.dataframe(response["data"].head())
-
-        # Abas para diferentes visualizações
-        tab1, tab2, tab3 = st.tabs(
-            ["📋 Tabela", "📊 Gráfico Matplotlib", "📈 Gráfico Interativo"])
-
-        with tab1:
+        # Exibir resultados com base no tipo de saída determinado
+        if output_type == "📋 Tabela":
             st.subheader("📋 Dados Tabulares")
 
             # Controles de ordenação
@@ -889,8 +854,7 @@ if 'last_response' in st.session_state:
             st.dataframe(
                 display_df,
                 use_container_width=True,
-                height=min(500, 35 * len(display_df)) + 40  # Altura dinâmica
-            )
+                height=min(500, 35 * len(display_df)) + 40) # Altura dinâmica
 
             # Botões de download
             col_download1, col_download2 = st.columns(2)
@@ -917,59 +881,8 @@ if 'last_response' in st.session_state:
                     help="Baixe todos os dados originais da consulta"
                 )
 
-        with tab2:
-            st.subheader("📊 Gráfico com Matplotlib")
-
-            # Verificar se temos dados suficientes para gráfico
-            if len(response["data"].columns) >= 2 and len(response["data"]) > 0:
-                try:
-                    fig, ax = plt.subplots(figsize=(10, 6))
-
-                    # Selecionar colunas apropriadas
-                    x_col = response["data"].columns[0]
-                    y_col = response["data"].columns[1]
-
-                    # Usar os dados com ordenação aplicada se disponível
-                    plot_data = response["data"]
-                    if 'sort_column_select' in st.session_state and st.session_state.sort_column_select != "Não ordenar":
-                        plot_data = apply_table_sorting(
-                            response["data"], 
-                            st.session_state.get('sort_column_select', ''), 
-                            st.session_state.get('sort_order_select', 'Crescente (menor → maior)')
-                        )
-
-                    if chart_type == "Barras" or chart_type == "Automático":
-                        data_plot = plot_data.head(20)  # Limitar para legibilidade
-                        ax.bar(data_plot[x_col], data_plot[y_col])
-                        ax.set_xlabel(x_col)
-                        ax.set_ylabel(y_col)
-                        plt.xticks(rotation=45)
-
-                    elif chart_type == "Pizza":
-                        data_plot = plot_data.head(10)  # Limitar para pizza
-                        ax.pie(
-                            data_plot[y_col], labels=data_plot[x_col], autopct='%1.1f%%')
-
-                    elif chart_type == "Linha":
-                        ax.plot(plot_data[x_col], plot_data[y_col], marker='o')
-                        ax.set_xlabel(x_col)
-                        ax.set_ylabel(y_col)
-                        plt.xticks(rotation=45)
-
-                    plt.tight_layout()
-                    st.pyplot(fig)
-
-                except Exception as e:
-                    st.warning(
-                        f"⚠️ Erro ao gerar gráfico matplotlib: {str(e)}")
-                    st.info("📋 Exibindo dados em formato tabular")
-                    st.dataframe(response["data"])
-            else:
-                st.warning("⚠️ Dados insuficientes para gerar gráfico")
-                st.dataframe(response["data"])
-
-        with tab3:
-            st.subheader("📈 Gráfico Interativo (Plotly)")
+        elif output_type == "📊 Gráfico":
+            st.subheader("📊 Visualização Gráfica")
 
             # Verificar se temos dados suficientes para gráfico
             if len(response["data"].columns) >= 2 and len(response["data"]) > 0:
@@ -978,23 +891,19 @@ if 'last_response' in st.session_state:
                     x_col = response["data"].columns[0]
                     y_col = response["data"].columns[1]
 
-                    # Usar os dados com ordenação aplicada se disponível
-                    plot_data = response["data"]
-                    if 'sort_column_select' in st.session_state and st.session_state.sort_column_select != "Não ordenar":
-                        plot_data = apply_table_sorting(
-                            response["data"], 
-                            st.session_state.get('sort_column_select', ''), 
-                            st.session_state.get('sort_order_select', 'Crescente (menor → maior)')
-                        )
-
-                    if chart_type == "Pizza":
-                        fig = px.pie(plot_data.head(10), values=y_col, names=x_col)
-                    elif chart_type == "Linha":
-                        fig = px.line(plot_data, x=x_col, y=y_col)
-                    elif chart_type == "Scatter":
-                        fig = px.scatter(plot_data, x=x_col, y=y_col)
-                    else:  # Barras ou Automático
-                        fig = px.bar(plot_data.head(20), x=x_col, y=y_col)
+                    # Determinar o tipo de gráfico mais apropriado
+                    if len(response["data"]) > 10 and response["data"][x_col].dtype in ['object', 'string']:
+                        # Para muitos itens categóricos, usar gráfico de barras
+                        fig = px.bar(response["data"].head(20), x=x_col, y=y_col)
+                    elif len(response["data"]) <= 10 and response["data"][x_col].dtype in ['object', 'string']:
+                        # Para poucos itens categóricos, usar gráfico de pizza
+                        fig = px.pie(response["data"], values=y_col, names=x_col)
+                    elif pd.api.types.is_datetime64_any_dtype(response["data"][x_col]):
+                        # Para dados temporais, usar gráfico de linha
+                        fig = px.line(response["data"], x=x_col, y=y_col)
+                    else:
+                        # Padrão para gráfico de barras
+                        fig = px.bar(response["data"].head(20), x=x_col, y=y_col)
 
                     st.plotly_chart(fig, use_container_width=True)
 
@@ -1006,6 +915,10 @@ if 'last_response' in st.session_state:
             else:
                 st.warning("⚠️ Dados insuficientes para gerar gráfico")
                 st.dataframe(response["data"])
+
+        elif output_type == "📝 Texto":
+            st.subheader("📝 Resumo Textual")
+            st.write(response["summary"])
 
         st.markdown('</div>', unsafe_allow_html=True)
 
