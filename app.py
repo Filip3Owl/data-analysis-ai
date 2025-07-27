@@ -39,17 +39,21 @@ st.markdown("""
         --primary: #667eea;
         --secondary: #764ba2;
         --light-bg: #f8fafc;
-        --dark-text: #1e293b;      /* Texto escuro para melhor legibilidade */
+        --dark-text: #1e293b;
         --light-text: #f8fafc;
-        --card-bg: #ffffff;        /* Fundo branco para cards */
-        --container-bg: #f8fafc;   /* Fundo claro para containers */
-        --sidebar-bg: #ffffff;     /* Fundo branco para sidebar */
-        --schema-bg: #f1f5f9;      /* Fundo cinza claro para schema */
+        --card-bg: #ffffff;
+        --container-bg: #f8fafc;
+        --sidebar-bg: #ffffff;
+        --schema-bg: #f1f5f9;
         --border-color: #e2e8f0;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --error: #ef4444;
     }
     
     body {
         background-color: var(--light-bg);
+        font-family: 'Inter', sans-serif;
     }
     
     .main-header {
@@ -87,6 +91,37 @@ st.markdown("""
         border-left: 4px solid var(--primary);
         margin-bottom: 1rem;
         color: var(--dark-text);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .summary-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    
+    .summary-icon {
+        font-size: 1.5rem;
+        margin-right: 0.75rem;
+        color: var(--primary);
+    }
+    
+    .summary-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--dark-text);
+    }
+    
+    .summary-content {
+        line-height: 1.6;
+        color: var(--dark-text);
+    }
+    
+    .summary-highlight {
+        background-color: #e0e7ff;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-weight: 500;
     }
     
     .metrics-container {
@@ -107,11 +142,13 @@ st.markdown("""
     
     .insight-box {
         background: #f0f8ff;
-        padding: 1rem;
+        padding: 1.25rem;
         border-radius: 8px;
-        border-left: 4px solid #28a745;
+        border-left: 4px solid var(--primary);
         margin: 1rem 0;
-        color: #2c3e50;
+        color: var(--dark-text);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        line-height: 1.6;
     }
     
     .table-container {
@@ -154,18 +191,37 @@ st.markdown("""
         background-color: var(--primary);
         color: white;
         border: none;
-        border-radius: 4px;
-        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        padding: 0.75rem 1.5rem;
         margin-top: 1rem;
-        transition: all 0.2s;
-        font-weight: 500;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .stButton>button:hover {
+        background-color: #5a67d8;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+    }
+    
+    .stButton>button:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+    }
+    
+    .stButton>button:disabled {
+        background-color: #94a3b8;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
     }
     
     .error-box {
         background-color: #fee2e2;
-        padding: 1rem;
+        padding: 1.25rem;
         border-radius: 8px;
-        border-left: 4px solid #dc2626;
+        border-left: 4px solid var(--error);
         margin: 1rem 0;
         color: #b91c1c;
     }
@@ -173,12 +229,15 @@ st.markdown("""
     .result-title {
         color: var(--dark-text);
         margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+        font-weight: 700;
     }
     
     .result-subtitle {
         color: var(--dark-text);
         opacity: 0.8;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        font-size: 1rem;
     }
     
     /* Melhorias para gráficos */
@@ -204,7 +263,7 @@ st.markdown("""
         background-color: var(--card-bg) !important;
     }
     
-    /* Correção para informações do schema - PROBLEMA PRINCIPAL */
+    /* Correção para informações do schema */
     .schema-info {
         background: var(--schema-bg) !important;
         padding: 0.8rem !important;
@@ -250,6 +309,22 @@ st.markdown("""
     .css-1d391kg h2, .css-1d391kg h3 {
         color: var(--dark-text) !important;
     }
+    
+    /* Footer styling */
+    .footer {
+        margin-top: 3rem;
+        padding: 1.5rem 0;
+        text-align: center;
+        color: var(--dark-text);
+        opacity: 0.8;
+        font-size: 0.9rem;
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .footer a {
+        color: var(--primary);
+        text-decoration: none;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -263,7 +338,6 @@ st.markdown("""
 
 # Verificação do banco de dados
 DB_PATH = PROJECT_ROOT / 'data' / 'clientes_completo.db'
-
 
 @st.cache_data
 def quick_database_check():
@@ -283,7 +357,6 @@ def quick_database_check():
             return True, f"✅ {health['tables_count']} tabelas, {health['total_records']:,} registros"
     except Exception as e:
         return False, f"Erro: {str(e)}"
-
 
 db_ok, db_message = quick_database_check()
 
@@ -383,6 +456,14 @@ with st.container():
         label_visibility="collapsed"
     )
 
+    # Adicionando seleção de tipo de gráfico
+    chart_type = st.selectbox(
+        "📊 Selecione o tipo de gráfico (se aplicável):",
+        options=["Barras", "Linhas", "Pizza", "Área", "Dispersão"],
+        index=0,
+        help="Escolha o tipo de visualização para sua análise"
+    )
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 # Função para pré-processar a consulta do usuário
@@ -400,7 +481,6 @@ def preprocess_user_query(query):
     processed_query = query
     context_hint = " (Considere que temos dados de clientes com colunas como: nome, estado, cidade, data_compra, canal_venda, valor_compra)"
     return processed_query + context_hint
-
 
 def get_relevant_metric_columns(df):
     """Identifica colunas numéricas relevantes para métricas"""
@@ -420,7 +500,6 @@ def get_relevant_metric_columns(df):
 
     return relevant_cols
 
-
 def apply_table_sorting(df, sort_column, sort_order):
     """Aplica ordenação à tabela"""
     if sort_column == "Não ordenar" or sort_column not in df.columns:
@@ -429,6 +508,49 @@ def apply_table_sorting(df, sort_column, sort_order):
     ascending = True if sort_order == "Crescente (menor → maior)" else False
     return df.sort_values(by=sort_column, ascending=ascending)
 
+def format_analysis_summary(summary_text, data):
+    """Formata o resumo da análise para melhor legibilidade"""
+    # Adiciona insights baseados nos dados
+    insights = []
+    
+    if isinstance(data, pd.DataFrame) and not data.empty:
+        # Identifica colunas numéricas
+        numeric_cols = data.select_dtypes(include=['number']).columns
+        
+        if len(numeric_cols) > 0:
+            main_numeric_col = numeric_cols[0]
+            
+            # Calcula métricas básicas
+            total = data[main_numeric_col].sum()
+            avg = data[main_numeric_col].mean()
+            max_val = data[main_numeric_col].max()
+            min_val = data[main_numeric_col].min()
+            
+            insights.append(f"""
+            <div class="summary-content">
+                <p><strong>Principais métricas:</strong></p>
+                <p>• Total: {total:,.2f}</p>
+                <p>• Média: {avg:,.2f}</p> 
+                <p>• Valor máximo: {max_val:,.2f}</p>
+                <p>• Valor mínimo: {min_val:,.2f}</p>
+            </div>
+            """)
+    
+    # Formata o texto do resumo
+    formatted_summary = f"""
+    <div class="summary-container">
+        <div class="summary-header">
+            <div class="summary-icon">🔍</div>
+            <div class="summary-title">Resumo da Análise</div>
+        </div>
+        <div class="summary-content">
+            {summary_text}
+            {"".join(insights)}
+        </div>
+    </div>
+    """
+    
+    return formatted_summary
 
 # Botão de análise
 if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured):
@@ -470,11 +592,16 @@ if st.button("🚀 Analisar Dados", type="primary", disabled=not api_configured)
             else:
                 output_type = "📋 Tabela"  # Padrão para tabela se não for especificado
 
-            interpretation["tipo_grafico"] = {
-                "📋 Tabela": "tabela",
-                "📊 Gráfico": "barras",
-                "📝 Texto": "texto"
-            }[output_type]
+            # Mapear a seleção do usuário para o tipo de gráfico
+            chart_type_mapping = {
+                "Barras": "barras",
+                "Linhas": "linhas",
+                "Pizza": "pizza",
+                "Área": "area",
+                "Dispersão": "dispersao"
+            }
+            
+            interpretation["tipo_grafico"] = chart_type_mapping.get(chart_type, "barras")
 
             sql_query = st.session_state.agents.generate_sql(interpretation)
             results = st.session_state.db.execute_query(sql_query)
@@ -575,11 +702,9 @@ if 'last_response' in st.session_state:
         st.markdown(f'<h2 class="result-title">🔍 Resultados da Análise</h2>', unsafe_allow_html=True)
         st.markdown(f'<p class="result-subtitle">📌 {response["interpretation"]["intencao"]}</p>', unsafe_allow_html=True)
 
-        st.markdown(f"""
-        <div class="insight-box">
-        {response["summary"]}
-        </div>
-        """, unsafe_allow_html=True)
+        # Resumo formatado
+        formatted_summary = format_analysis_summary(response["summary"], response["data"])
+        st.markdown(formatted_summary, unsafe_allow_html=True)
 
         st.info(f"📊 **{len(response['data'])}** registros encontrados | **{len(response['data'].columns)}** colunas")
 
@@ -687,19 +812,14 @@ if 'last_response' in st.session_state:
             else:
                 st.info(f"📊 Exibindo **{len(display_df):,}** de **{len(response['data']):,}** registros")
 
-            formatted_df = display_df.copy()
-            for col in formatted_df.select_dtypes(include=['number']).columns:
-                if 'valor' in col.lower() or 'preco' in col.lower():
-                    formatted_df[col] = formatted_df[col].apply(lambda x: f"R$ {x:,.2f}")
-                elif 'count' in col.lower() or col.lower().endswith('_count'):
-                    formatted_df[col] = formatted_df[col].apply(lambda x: f"{x:,.0f}")
-                elif not any(pattern in col.lower() for pattern in ['id', 'idade']):
-                    formatted_df[col] = formatted_df[col].apply(lambda x: f"{x:,.2f}" if x != int(x) else f"{x:,.0f}")
-
+            # Correção para exibir a tabela corretamente
+            st.markdown('<div class="table-container">', unsafe_allow_html=True)
             st.dataframe(
                 display_df,
                 use_container_width=True,
-                height=min(500, 35 * len(display_df)) + 40)
+                height=min(500, 35 * len(display_df))
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
 
             col_download1, col_download2 = st.columns(2)
             
@@ -730,15 +850,20 @@ if 'last_response' in st.session_state:
                 try:
                     x_col = response["data"].columns[0]
                     y_col = response["data"].columns[1]
-
-                    if len(response["data"]) > 10 and response["data"][x_col].dtype in ['object', 'string']:
-                        fig = px.bar(response["data"].head(20), x=x_col, y=y_col)
-                    elif len(response["data"]) <= 10 and response["data"][x_col].dtype in ['object', 'string']:
-                        fig = px.pie(response["data"], values=y_col, names=x_col)
-                    elif pd.api.types.is_datetime64_any_dtype(response["data"][x_col]):
-                        fig = px.line(response["data"], x=x_col, y=y_col)
+                    
+                    # Gera o gráfico com base na seleção do usuário
+                    if chart_type == "Barras":
+                        fig = px.bar(response["data"], x=x_col, y=y_col, title=f"Gráfico de Barras: {y_col} por {x_col}")
+                    elif chart_type == "Linhas":
+                        fig = px.line(response["data"], x=x_col, y=y_col, title=f"Gráfico de Linhas: {y_col} por {x_col}")
+                    elif chart_type == "Pizza":
+                        fig = px.pie(response["data"], values=y_col, names=x_col, title=f"Gráfico de Pizza: Distribuição de {y_col}")
+                    elif chart_type == "Área":
+                        fig = px.area(response["data"], x=x_col, y=y_col, title=f"Gráfico de Área: {y_col} por {x_col}")
+                    elif chart_type == "Dispersão":
+                        fig = px.scatter(response["data"], x=x_col, y=y_col, title=f"Gráfico de Dispersão: {y_col} vs {x_col}")
                     else:
-                        fig = px.bar(response["data"].head(20), x=x_col, y=y_col)
+                        fig = px.bar(response["data"], x=x_col, y=y_col)  # Default
 
                     st.plotly_chart(fig, use_container_width=True)
 
@@ -757,6 +882,12 @@ if 'last_response' in st.session_state:
         st.markdown('</div>', unsafe_allow_html=True)
 
 # Rodapé
-st.divider()
-st.caption(f"📅 Última atualização: {datetime.now().strftime('%d/%m/%Y %H:%M')} | "
-           f"📊 {st.session_state.get('last_response', {}).get('total_records', 0)} registros")
+st.markdown("""
+<div class="footer">
+    <p>📅 Última atualização: {datetime} | 📊 {records} registros</p>
+    <p>Desenvolvido por <a href="https://github.com/Filip3Owl" target="_blank">Filipe Rangel</a></p>
+</div>
+""".format(
+    datetime=datetime.now().strftime('%d/%m/%Y %H:%M'),
+    records=st.session_state.get('last_response', {}).get('total_records', 0)
+), unsafe_allow_html=True)
