@@ -25,28 +25,28 @@ st.set_page_config(
 )
 
 # Configurações de estilo para gráficos
-plt.rcParams['text.color'] = '#2d3748'
-plt.rcParams['axes.labelcolor'] = '#2d3748'
-plt.rcParams['xtick.color'] = '#2d3748'
-plt.rcParams['ytick.color'] = '#2d3748'
-plt.rcParams['axes.facecolor'] = 'white'
-plt.rcParams['figure.facecolor'] = 'white'
+plt.rcParams['text.color'] = '#f8fafc'
+plt.rcParams['axes.labelcolor'] = '#f8fafc'
+plt.rcParams['xtick.color'] = '#f8fafc'
+plt.rcParams['ytick.color'] = '#f8fafc'
+plt.rcParams['axes.facecolor'] = '#1a202c'
+plt.rcParams['figure.facecolor'] = '#1a202c'
 
-# CSS customizado melhorado com cores mais visíveis
+# CSS customizado melhorado com cores mais visíveis para fundo escuro
 st.markdown("""
 <style>
     :root {
         --primary: #667eea;
         --secondary: #764ba2;
-        --light-bg: #f8fafc;
-        --dark-text: #2d3748;
-        --medium-text: #4a5568;
+        --dark-bg: #1a202c;
         --light-text: #f8fafc;
-        --card-bg: #ffffff;
-        --container-bg: #f8fafc;
-        --sidebar-bg: #ffffff;
-        --schema-bg: #f1f5f9;
-        --border-color: #e2e8f0;
+        --medium-text: #e2e8f0;
+        --dark-text: #2d3748;
+        --card-bg: #2d3748;
+        --container-bg: #2d3748;
+        --sidebar-bg: #1a202c;
+        --schema-bg: #374151;
+        --border-color: #4a5568;
         --success: #10b981;
         --warning: #f59e0b;
         --error: #ef4444;
@@ -54,9 +54,9 @@ st.markdown("""
     }
     
     body {
-        background-color: var(--light-bg);
+        background-color: var(--dark-bg);
         font-family: 'Inter', sans-serif;
-        color: var(--dark-text);
+        color: var(--light-text);
     }
     
     .main-header {
@@ -66,7 +66,7 @@ st.markdown("""
         color: var(--light-text);
         text-align: center;
         margin-bottom: 2rem;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
     
     .input-container {
@@ -75,7 +75,7 @@ st.markdown("""
         border-radius: 8px;
         border: 1px solid var(--border-color);
         margin-bottom: 1.5rem;
-        color: var(--dark-text);
+        color: var(--light-text);
     }
     
     .output-container {
@@ -84,7 +84,7 @@ st.markdown("""
         border-radius: 8px;
         border: 1px solid var(--border-color);
         margin-bottom: 1.5rem;
-        color: var(--dark-text);
+        color: var(--light-text);
     }
     
     .summary-container {
@@ -93,8 +93,8 @@ st.markdown("""
         border-radius: 8px;
         border-left: 4px solid var(--primary);
         margin-bottom: 1rem;
-        color: var(--dark-text);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        color: var(--light-text);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
     }
     
     .summary-header {
@@ -112,12 +112,12 @@ st.markdown("""
     .summary-title {
         font-size: 1.1rem;
         font-weight: 600;
-        color: var(--dark-text);
+        color: var(--light-text);
     }
     
     .summary-content {
         line-height: 1.6;
-        color: var(--dark-text);
+        color: var(--light-text);
         font-size: 0.95rem;
     }
     
@@ -126,6 +126,7 @@ st.markdown("""
         padding: 0.2rem 0.4rem;
         border-radius: 4px;
         font-weight: 500;
+        color: var(--dark-text);
     }
     
     .metrics-container {
@@ -140,18 +141,18 @@ st.markdown("""
         padding: 1rem;
         border-radius: 8px;
         border-left: 4px solid var(--primary);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        color: var(--dark-text);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        color: var(--light-text);
     }
     
     .insight-box {
-        background: #f0f8ff;
+        background: #374151;
         padding: 1.25rem;
         border-radius: 8px;
         border-left: 4px solid var(--primary);
         margin: 1rem 0;
-        color: var(--dark-text);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        color: var(--light-text);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         line-height: 1.6;
     }
     
@@ -170,7 +171,7 @@ st.markdown("""
         border-radius: 8px;
         border: 1px solid var(--border-color);
         margin-bottom: 1rem;
-        color: var(--dark-text);
+        color: var(--light-text);
     }
     
     .limit-controls {
@@ -179,12 +180,12 @@ st.markdown("""
         border-radius: 8px;
         border: 1px solid var(--border-color);
         margin-bottom: 1rem;
-        color: var(--dark-text);
+        color: var(--light-text);
     }
     
     .dataframe {
         width: 100% !important;
-        color: var(--dark-text) !important;
+        color: var(--light-text) !important;
     }
     
     .dataframe th {
@@ -196,7 +197,7 @@ st.markdown("""
     }
     
     .dataframe td {
-        color: var(--dark-text) !important;
+        color: var(--light-text) !important;
         background-color: var(--card-bg) !important;
     }
     
@@ -209,38 +210,38 @@ st.markdown("""
         margin-top: 1rem;
         transition: all 0.3s ease;
         font-weight: 600;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
     }
     
     .stButton>button:hover {
         background-color: #5a67d8;
         transform: translateY(-1px);
-        box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.4);
     }
     
     .stButton>button:active {
         transform: translateY(0);
-        box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 3px rgba(0,0,0,0.3);
     }
     
     .stButton>button:disabled {
-        background-color: #94a3b8;
+        background-color: #4a5568;
         cursor: not-allowed;
         transform: none;
         box-shadow: none;
     }
     
     .error-box {
-        background-color: #fee2e2;
+        background-color: #2d1b1b;
         padding: 1.25rem;
         border-radius: 8px;
         border-left: 4px solid var(--error);
         margin: 1rem 0;
-        color: #b91c1c;
+        color: #fca5a5;
     }
     
     .result-title {
-        color: var(--dark-text);
+        color: var(--light-text);
         margin-bottom: 0.5rem;
         font-size: 1.5rem;
         font-weight: 700;
@@ -254,7 +255,7 @@ st.markdown("""
     
     /* Melhorias para gráficos */
     .js-plotly-plot .plotly, .js-plotly-plot .plotly div {
-        color: var(--dark-text) !important;
+        color: var(--light-text) !important;
     }
     
     /* Ajuste para o expander */
@@ -265,13 +266,13 @@ st.markdown("""
     }
     
     .st-expander .st-expanderHeader {
-        color: var(--dark-text) !important;
+        color: var(--light-text) !important;
         font-weight: 600;
         background-color: var(--card-bg) !important;
     }
     
     .st-expander .st-expanderContent {
-        color: var(--dark-text) !important;
+        color: var(--light-text) !important;
         background-color: var(--card-bg) !important;
     }
     
@@ -282,7 +283,7 @@ st.markdown("""
         border-radius: 6px !important;
         margin: 0.4rem 0 !important;
         font-size: 0.9rem !important;
-        color: var(--dark-text) !important;
+        color: var(--light-text) !important;
         border: 1px solid var(--border-color) !important;
     }
     
@@ -301,7 +302,7 @@ st.markdown("""
         width: 100% !important;
         text-align: left !important;
         background-color: var(--card-bg) !important;
-        color: var(--dark-text) !important;
+        color: var(--light-text) !important;
         border: 1px solid var(--border-color) !important;
         margin-bottom: 0.5rem !important;
     }
@@ -314,32 +315,32 @@ st.markdown("""
                
     /* Texto da sidebar */
     .css-1d391kg .stMarkdown {
-        color: var(--dark-text) !important;
+        color: var(--light-text) !important;
     }
     
     /* Subheaders da sidebar */
     .css-1d391kg h2, .css-1d391kg h3 {
-        color: var(--dark-text) !important;
+        color: var(--light-text) !important;
     }
     
     /* Melhorias no texto geral */
     .stMarkdown {
-        color: var(--dark-text) !important;
+        color: var(--light-text) !important;
     }
     
     /* Texto do selectbox e outros elementos */
     .stSelectbox label {
-        color: var(--dark-text) !important;
+        color: var(--light-text) !important;
         font-weight: 500 !important;
     }
     
     .stTextArea label {
-        color: var(--dark-text) !important;
+        color: var(--light-text) !important;
         font-weight: 500 !important;
     }
     
     .stSlider label {
-        color: var(--dark-text) !important;
+        color: var(--light-text) !important;
         font-weight: 500 !important;
     }
     
@@ -360,28 +361,108 @@ st.markdown("""
     
     /* Info boxes com cores mais visíveis */
     .stAlert {
-        color: var(--dark-text) !important;
+        color: var(--light-text) !important;
     }
     
     /* Warning box específico para limite */
     .limit-warning {
-        background-color: #fef3c7;
+        background-color: #2d1b0d;
         border: 1px solid #f59e0b;
         border-radius: 6px;
         padding: 0.75rem;
         margin: 0.5rem 0;
-        color: #92400e;
+        color: #fbbf24;
         font-size: 0.9rem;
     }
     
     .limit-info {
-        background-color: #dbeafe;
+        background-color: #1e293b;
         border: 1px solid var(--accent);
         border-radius: 6px;
         padding: 0.75rem;
         margin: 0.5rem 0;
-        color: #1e40af;
+        color: #60a5fa;
         font-size: 0.9rem;
+    }
+    
+    /* Melhorar contraste dos elementos do Streamlit */
+    .stApp {
+        background-color: var(--dark-bg) !important;
+        color: var(--light-text) !important;
+    }
+    
+    /* Headers principais */
+    h1, h2, h3, h4, h5, h6 {
+        color: var(--light-text) !important;
+    }
+    
+    /* Inputs de texto */
+    .stTextInput > div > div > input {
+        background-color: var(--card-bg) !important;
+        color: var(--light-text) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    .stTextArea > div > div > textarea {
+        background-color: var(--card-bg) !important;
+        color: var(--light-text) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    /* Selectbox */
+    .stSelectbox > div > div > select {
+        background-color: var(--card-bg) !important;
+        color: var(--light-text) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    /* Slider */
+    .stSlider > div > div > div {
+        color: var(--light-text) !important;
+    }
+    
+    /* Metrics */
+    .metric-container {
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        color: var(--light-text) !important;
+    }
+    
+    /* DataFrames */
+    .stDataFrame {
+        background-color: var(--card-bg) !important;
+        color: var(--light-text) !important;
+    }
+    
+    /* Code blocks */
+    .stCodeBlock {
+        background-color: var(--card-bg) !important;
+        color: var(--light-text) !important;
+    }
+    
+    /* Sucesso/Info/Warning/Error messages */
+    .stSuccess {
+        background-color: #1a2e1a !important;
+        color: #4ade80 !important;
+        border-color: var(--success) !important;
+    }
+    
+    .stInfo {
+        background-color: #1e293b !important;
+        color: #60a5fa !important;
+        border-color: var(--accent) !important;
+    }
+    
+    .stWarning {
+        background-color: #2d1b0d !important;
+        color: #fbbf24 !important;
+        border-color: var(--warning) !important;
+    }
+    
+    .stError {
+        background-color: #2d1b1b !important;
+        color: #fca5a5 !important;
+        border-color: var(--error) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -481,7 +562,7 @@ with st.sidebar:
                             col_type = types[i] if i < len(types) else "N/A"
                             st.markdown(f"""
                             <div class='schema-info'>
-                                • <strong>{col}</strong> <span style='color: #4a5568;'>({col_type})</span>
+                                • <strong>{col}</strong> <span style='color: #cbd5e0;'>({col_type})</span>
                             </div>
                             """, unsafe_allow_html=True)
                     else:
