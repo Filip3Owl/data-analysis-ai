@@ -54,40 +54,40 @@ INTERPRETATION_PROMPT = PromptTemplate(
     - interagiu: BOOLEAN
     - canal: TEXT
 
-    ### Solicitação do Usuário:
-    "{user_input}"
+        ### Solicitação do Usuário:
+        "{user_input}"
 
-    ### Instruções:
-    1. Analise a pergunta e identifique quais tabelas são necessárias
-    2. Determine os filtros relevantes (WHERE)
-    3. Identifique as métricas a calcular (COUNT, SUM, AVG, etc.)
-    4. Especifique os campos para agrupamento (GROUP BY)
-    5. Defina o formato de saída desejado (tabela/gráfico/texto)
-    6. Para ordenação, considere ORDER BY quando relevante
+        ### Instruções:
+        1. Analise a pergunta e identifique quais tabelas são necessárias
+        2. Determine os filtros relevantes (WHERE)
+        3. Identifique as métricas a calcular (COUNT, SUM, AVG, etc.)
+        4. Especifique os campos para agrupamento (GROUP BY)
+        5. Defina o formato de saída desejado (tabela/gráfico/texto)
+        6. Para ordenação, considere ORDER BY quando relevante
 
-    Retorne APENAS um JSON válido com esta estrutura:
-    {{
-        "intencao": "Descrição clara do objetivo",
-        "tabelas": ["lista", "de", "tabelas"],
-        "filtros": ["condicao1", "condicao2"],
-        "agregacoes": ["funcao(coluna) AS alias"],
-        "grupo_por": ["coluna1", "coluna2"],
-        "ordenacao": ["coluna DESC/ASC"],
-        "limite": 10,
-        "formato_saida": "tabela/gráfico/texto"
-    }}
+        Retorne APENAS um JSON válido com esta estrutura:
+        {{
+            "intencao": "Descrição clara do objetivo",
+            "tabelas": ["lista", "de", "tabelas"],
+            "filtros": ["condicao1", "condicao2"],
+            "agregacoes": ["funcao(coluna) AS alias"],
+            "grupo_por": ["coluna1", "coluna2"],
+            "ordenacao": ["coluna DESC/ASC"],
+            "limite": 10,
+            "formato_saida": "tabela/gráfico/texto"
+        }}
 
-    Exemplo para "Top 5 estados com mais vendas em 2024":
-    {{
-        "intencao": "Ranking dos 5 estados com maior volume de vendas em 2024",
-        "tabelas": ["compras", "clientes"],
-        "filtros": ["strftime('%Y', compras.data_compra) = '2024'"],
-        "agregacoes": ["SUM(compras.valor) AS total_vendas", "COUNT(compras.id) AS total_pedidos"],
-        "grupo_por": ["clientes.estado"],
-        "ordenacao": ["total_vendas DESC"],
-        "limite": 5,
-        "formato_saida": "tabela"
-    }}
+        Exemplo para "Top 5 estados com mais vendas em 2024":
+        {{
+            "intencao": "Ranking dos 5 estados com maior volume de vendas em 2024",
+            "tabelas": ["compras", "clientes"],
+            "filtros": ["strftime('%Y', compras.data_compra) = '2024'"],
+            "agregacoes": ["SUM(compras.valor) AS total_vendas", "COUNT(compras.id) AS total_pedidos"],
+            "grupo_por": ["clientes.estado"],
+            "ordenacao": ["total_vendas DESC"],
+            "limite": 5,
+            "formato_saida": "tabela"
+        }}
     """ 
 )
 
@@ -98,7 +98,17 @@ SQL_PROMPT = PromptTemplate(
     Você é um especialista em SQLite. Gere uma query SQL válida seguindo estas regras:
 
     ### Tabelas Disponíveis e Estrutura:
+    ### Tabelas Disponíveis e Estrutura:
     1. clientes (
+        id INTEGER PRIMARY KEY,
+        nome TEXT,
+        email TEXT,
+        idade INTEGER,
+        cidade TEXT,
+        estado TEXT,
+        profissao TEXT,
+        genero TEXT
+    )
         id INTEGER PRIMARY KEY,
         nome TEXT,
         email TEXT,
@@ -118,7 +128,25 @@ SQL_PROMPT = PromptTemplate(
         canal TEXT,
         FOREIGN KEY(cliente_id) REFERENCES clientes(id)
     )
+    2. compras (
+        id INTEGER PRIMARY KEY,
+        cliente_id INTEGER,
+        data_compra TEXT (formato ISO: YYYY-MM-DD),
+        valor REAL,
+        categoria TEXT,
+        canal TEXT,
+        FOREIGN KEY(cliente_id) REFERENCES clientes(id)
+    )
 
+    3. suporte (
+        id INTEGER PRIMARY KEY,
+        cliente_id INTEGER,
+        data_contato TEXT (formato ISO: YYYY-MM-DD),
+        tipo_contato TEXT,
+        resolvido BOOLEAN,
+        canal TEXT,
+        FOREIGN KEY(cliente_id) REFERENCES clientes(id)
+    )
     3. suporte (
         id INTEGER PRIMARY KEY,
         cliente_id INTEGER,
@@ -175,6 +203,8 @@ SQL_PROMPT = PromptTemplate(
     {interpretation}
 
     ### Instruções Finais:
+    - Gere APENAS a query SQL válida, sem explicações ou comentários
+    - Use os aliases convencionados
     - Gere APENAS a query SQL válida, sem explicações ou comentários
     - Use os aliases convencionados
     - Inclua LIMIT quando especificado
