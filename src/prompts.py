@@ -128,7 +128,7 @@ INTERPRETATION_PROMPT = PromptTemplate(
         "limite": 5,
         "formato_saida": "tabela"
     }}
-    """ 
+    """
 )
 
 # Prompt para geração de SQL
@@ -295,7 +295,7 @@ Chaves estrangeiras habilitadas: Não
         GROUP BY c.id
         HAVING COUNT(co.id) >= 3
     )
-    SELECT 
+    SELECT
         ca.estado,
         COUNT(DISTINCT ca.id) AS total_clientes,
         ROUND(SUM(co.valor), 2) AS total_vendas,

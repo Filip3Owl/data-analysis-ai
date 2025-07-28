@@ -1,4 +1,4 @@
-#agents.py
+# agents.py
 import json
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -25,7 +25,7 @@ except ImportError:
         input_variables=["user_input", "schema_info"],
         template="""
         Analise a solicitação considerando o schema do banco de dados disponível:
-        
+
         Schema disponível: {schema_info}
         Solicitação: "{user_input}"
 
@@ -48,9 +48,9 @@ except ImportError:
         input_variables=["interpretation", "schema_info"],
         template="""
         Gere uma query SQL válida para SQLite baseada na interpretação e schema:
-        
+
         Interpretação: {interpretation}
-        
+
         Schema do banco:
         {schema_info}
 
@@ -68,44 +68,48 @@ except ImportError:
 
 class DatabaseManager:
     """Gerenciador de conexão e operações com o banco de dados."""
-    
+
     def __init__(self, db_path: Optional[str] = None):
         """
         Inicializa o gerenciador do banco de dados.
-        
+
         Args:
             db_path: Caminho para o banco de dados. Se None, usa o padrão.
         """
         self.db_path = self._get_db_path(db_path)
         self.logger = logging.getLogger(__name__)
         self._schema_cache = None
-        
+
         # Verificar se o banco existe
         if not self.db_path.exists():
-            self.logger.warning(f"Banco de dados não encontrado em: {self.db_path}")
-            raise FileNotFoundError(f"Banco de dados não encontrado: {self.db_path}")
-    
+            self.logger.warning(
+    f"Banco de dados não encontrado em: {
+        self.db_path}")
+            raise FileNotFoundError(
+    f"Banco de dados não encontrado: {
+        self.db_path}")
+
     def _get_db_path(self, db_path: Optional[str] = None) -> Path:
         """
         Determina o caminho do banco de dados usando caminhos relativos.
-        
+
         Args:
             db_path: Caminho customizado (opcional)
-            
+
         Returns:
             Path objeto com o caminho do banco
         """
         if db_path:
             return Path(db_path)
-        
+
         # Usar caminho relativo padrão
         current_dir = Path(__file__).parent
         return current_dir / "data" / "clientes_completo.db"
-    
+
     def get_connection(self) -> sqlite3.Connection:
         """
         Cria e retorna uma conexão com o banco de dados.
-        
+
         Returns:
             Conexão SQLite
         """
@@ -116,78 +120,109 @@ class DatabaseManager:
         except Exception as e:
             self.logger.error(f"Erro ao conectar ao banco: {e}")
             raise
-    
-    def execute_query(self, query: str, params: Optional[Tuple] = None) -> pd.DataFrame:
+
+    def execute_query(
+    self,
+    query: str,
+     params: Optional[Tuple] = None) -> pd.DataFrame:
         """
         Executa uma query e retorna os resultados como DataFrame.
-        
+
         Args:
             query: Query SQL
             params: Parâmetros para a query (opcional)
-            
+
         Returns:
             DataFrame com os resultados
         """
         try:
             with self.get_connection() as conn:
                 df = pd.read_sql_query(query, conn, params=params)
-                self.logger.info(f"Query executada com sucesso. {len(df)} registros retornados.")
+                self.logger.info(
+    f"Query executada com sucesso. {
+        len(df)} registros retornados.")
                 return df
         except Exception as e:
             self.logger.error(f"Erro ao executar query: {e}")
             self.logger.error(f"Query: {query}")
             return pd.DataFrame()
-    
+
     def get_schema(self, force_refresh: bool = False) -> Dict[str, List[str]]:
         """
         Obtém o schema do banco de dados (tabelas e colunas).
-        
+
         Args:
             force_refresh: Force atualização do cache
-            
+
         Returns:
             Dict com tabelas e suas colunas
         """
         if self._schema_cache is not None and not force_refresh:
             return self._schema_cache
-        
+
         schema = {}
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 # Obter lista de tabelas
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                cursor.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'")
                 tables = [row[0] for row in cursor.fetchall()]
-                
+
                 # Para cada tabela, obter as colunas
                 for table in tables:
                     cursor.execute(f"PRAGMA table_info({table})")
                     columns = [col[1] for col in cursor.fetchall()]
                     schema[table] = columns
-                
+
                 self._schema_cache = schema
                 self.logger.info(f"Schema carregado: {list(schema.keys())}")
-                
+
         except Exception as e:
             self.logger.error(f"Erro ao obter schema: {e}")
             # Fallback para schema padrão
             schema = {
-                "clientes": ["id", "nome", "email", "idade", "cidade", "estado", "profissao", "genero"],
-                "compras": ["id", "cliente_id", "data_compra", "valor", "categoria", "canal"],
-                "suporte": ["id", "cliente_id", "data_contato", "tipo_contato", "resolvido", "canal"],
-                "campanhas_marketing": ["id", "cliente_id", "nome_campanha", "data_envio", "interagiu", "canal"]
-            }
-        
+    "clientes": [
+        "id",
+        "nome",
+        "email",
+        "idade",
+        "cidade",
+        "estado",
+        "profissao",
+        "genero"],
+        "compras": [
+            "id",
+            "cliente_id",
+            "data_compra",
+            "valor",
+            "categoria",
+            "canal"],
+            "suporte": [
+                "id",
+                "cliente_id",
+                "data_contato",
+                "tipo_contato",
+                "resolvido",
+                "canal"],
+                "campanhas_marketing": [
+                    "id",
+                    "cliente_id",
+                    "nome_campanha",
+                    "data_envio",
+                    "interagiu",
+                     "canal"]}
+
         return schema
-    
+
     def validate_query(self, query: str) -> Tuple[bool, str]:
         """
         Valida uma query SQL sem executá-la.
-        
+
         Args:
             query: Query SQL para validar
-            
+
         Returns:
             Tuple (is_valid, error_message)
         """
@@ -199,15 +234,18 @@ class DatabaseManager:
                 return True, "Query válida"
         except Exception as e:
             return False, str(e)
-    
-    def get_table_sample(self, table_name: str, limit: int = 5) -> pd.DataFrame:
+
+    def get_table_sample(
+    self,
+    table_name: str,
+     limit: int = 5) -> pd.DataFrame:
         """
         Obtém uma amostra de dados de uma tabela.
-        
+
         Args:
             table_name: Nome da tabela
             limit: Número de registros
-            
+
         Returns:
             DataFrame com amostra dos dados
         """
@@ -216,7 +254,11 @@ class DatabaseManager:
 
 
 class AgentsManager:
-    def __init__(self, llm, database_manager: Optional[DatabaseManager] = None, db_path: Optional[str] = None):
+    def __init__(
+    self,
+    llm,
+    database_manager: Optional[DatabaseManager] = None,
+     db_path: Optional[str] = None):
         """
         Inicializa o gerenciador de agentes com LLM e banco de dados.
 
@@ -226,13 +268,13 @@ class AgentsManager:
             db_path: Caminho do banco de dados (usado se database_manager não fornecido)
         """
         self.llm = llm
-        
+
         # Inicializar gerenciador do banco de dados
         if database_manager:
             self.db = database_manager
         else:
             self.db = DatabaseManager(db_path)
-        
+
         self.logger = logging.getLogger(__name__)
 
         # Configurar estilo dos gráficos
@@ -246,73 +288,110 @@ class AgentsManager:
         except BaseException:
             pass
 
-<<<<<<< HEAD
-        # Schema do banco para referência
-        self.schema = {
-    "clientes": {
-        "columns": [
-            {"name": "id", "type": "INTEGER", "description": "Chave primária", "primary_key": True},
-            {"name": "nome", "type": "TEXT", "description": "Nome completo do cliente"},
-            {"name": "email", "type": "TEXT", "description": "E-mail único do cliente"},
-            {"name": "idade", "type": "INTEGER", "description": "Idade em anos"},
-            {"name": "cidade", "type": "TEXT", "description": "Cidade de residência"},
-            {"name": "estado", "type": "TEXT", "description": "Sigla do estado (ex: SP, RJ)"},
-            {"name": "profissao", "type": "TEXT", "description": "Profissão/ocupação"},
-            {"name": "genero", "type": "TEXT", "description": "Identidade de gênero"}
-        ],
-        "description": "Tabela de cadastro de clientes",
-        "foreign_keys": []
-    },
-    "compras": {
-        "columns": [
-            {"name": "id", "type": "INTEGER", "description": "Chave primária", "primary_key": True},
-            {"name": "cliente_id", "type": "INTEGER", "description": "Chave estrangeira para clientes", "foreign_key": "clientes.id"},
-            {"name": "data_compra", "type": "TEXT", "description": "Data no formato ISO (YYYY-MM-DD)"},
-            {"name": "valor", "type": "REAL", "description": "Valor total da compra"},
-            {"name": "categoria", "type": "TEXT", "description": "Categoria do produto/serviço"},
-            {"name": "canal", "type": "TEXT", "description": "Canal de venda (online/loja/telefone)"}
-        ],
-        "description": "Registro de transações de compras",
-        "foreign_keys": ["cliente_id"]
-    },
-    "suporte": {
-        "columns": [
-            {"name": "id", "type": "INTEGER", "description": "Chave primária", "primary_key": True},
-            {"name": "cliente_id", "type": "INTEGER", "description": "Chave estrangeira para clientes", "foreign_key": "clientes.id"},
-            {"name": "data_contato", "type": "TEXT", "description": "Data no formato ISO (YYYY-MM-DD)"},
-            {"name": "tipo_contato", "type": "TEXT", "description": "Tipo de solicitação (reclamação/duvida/elogio)"},
-            {"name": "resolvido", "type": "BOOLEAN", "description": "Indica se o ticket foi resolvido (0/1)"},
-            {"name": "canal", "type": "TEXT", "description": "Canal de atendimento (email/telefone/chat)"}
-        ],
-        "description": "Registro de atendimentos ao cliente",
-        "foreign_keys": ["cliente_id"]
-    },
-    "campanhas_marketing": {
-        "columns": [
-            {"name": "id", "type": "INTEGER", "description": "Chave primária", "primary_key": True},
-            {"name": "cliente_id", "type": "INTEGER", "description": "Chave estrangeira para clientes", "foreign_key": "clientes.id"},
-            {"name": "nome_campanha", "type": "TEXT", "description": "Nome/identificador da campanha"},
-            {"name": "data_envio", "type": "TEXT", "description": "Data no formato ISO (YYYY-MM-DD)"},
-            {"name": "interagiu", "type": "BOOLEAN", "description": "Se o cliente interagiu com a campanha (0/1)"},
-            {"name": "canal", "type": "TEXT", "description": "Canal de marketing (email/sms/push/whatsapp)"}
-        ],
-        "description": "Registro de campanhas de marketing enviadas",
-        "foreign_keys": ["cliente_id"]
-    },
-    "metadata": {
-        "database_type": "SQLite",
-        "date_format": "ISO 8601 (YYYY-MM-DD)",
-        "version": "1.0",
-        "description": "Esquema para sistema de CRM e vendas"
-    }
-}
-=======
-        # Obter schema dinâmico do banco
-        self.schema = self.db.get_schema()
-        self.logger.info(f"AgentsManager inicializado com tabelas: {list(self.schema.keys())}")
->>>>>>> dab40b277b91c7dfd8ab814e069056bf0ee0e959
 
-    def interpret_request(self, user_input: str) -> Dict[str, Any]:
+<< << << < HEAD
+       # Schema do banco para referência
+   self.schema = {
+        "clientes": {
+    "columns": [
+        {"name": "id",
+    "type": "INTEGER",
+    "description": "Chave primária",
+     "primary_key": True},
+        {"name": "nome", "type": "TEXT", "description": "Nome completo do cliente"},
+        {"name": "email", "type": "TEXT", "description": "E-mail único do cliente"},
+        {"name": "idade", "type": "INTEGER", "description": "Idade em anos"},
+        {"name": "cidade", "type": "TEXT", "description": "Cidade de residência"},
+        {"name": "estado", "type": "TEXT",
+            "description": "Sigla do estado (ex: SP, RJ)"},
+        {"name": "profissao", "type": "TEXT", "description": "Profissão/ocupação"},
+        {"name": "genero", "type": "TEXT", "description": "Identidade de gênero"}
+    ],
+    "description": "Tabela de cadastro de clientes",
+    "foreign_keys": []
+},
+        "compras": {
+    "columns": [
+        {"name": "id",
+    "type": "INTEGER",
+    "description": "Chave primária",
+     "primary_key": True},
+        {"name": "cliente_id",
+    "type": "INTEGER",
+    "description": "Chave estrangeira para clientes",
+     "foreign_key": "clientes.id"},
+        {"name": "data_compra", "type": "TEXT",
+            "description": "Data no formato ISO (YYYY-MM-DD)"},
+        {"name": "valor", "type": "REAL", "description": "Valor total da compra"},
+        {"name": "categoria", "type": "TEXT",
+            "description": "Categoria do produto/serviço"},
+        {"name": "canal", "type": "TEXT",
+            "description": "Canal de venda (online/loja/telefone)"}
+    ],
+    "description": "Registro de transações de compras",
+    "foreign_keys": ["cliente_id"]
+},
+        "suporte": {
+    "columns": [
+        {"name": "id",
+    "type": "INTEGER",
+    "description": "Chave primária",
+     "primary_key": True},
+        {"name": "cliente_id",
+    "type": "INTEGER",
+    "description": "Chave estrangeira para clientes",
+     "foreign_key": "clientes.id"},
+        {"name": "data_contato", "type": "TEXT",
+            "description": "Data no formato ISO (YYYY-MM-DD)"},
+        {"name": "tipo_contato", "type": "TEXT",
+            "description": "Tipo de solicitação (reclamação/duvida/elogio)"},
+        {"name": "resolvido", "type": "BOOLEAN",
+            "description": "Indica se o ticket foi resolvido (0/1)"},
+        {"name": "canal", "type": "TEXT",
+            "description": "Canal de atendimento (email/telefone/chat)"}
+    ],
+    "description": "Registro de atendimentos ao cliente",
+    "foreign_keys": ["cliente_id"]
+},
+        "campanhas_marketing": {
+    "columns": [
+        {"name": "id",
+    "type": "INTEGER",
+    "description": "Chave primária",
+     "primary_key": True},
+        {"name": "cliente_id",
+    "type": "INTEGER",
+    "description": "Chave estrangeira para clientes",
+     "foreign_key": "clientes.id"},
+        {"name": "nome_campanha", "type": "TEXT",
+            "description": "Nome/identificador da campanha"},
+        {"name": "data_envio", "type": "TEXT",
+            "description": "Data no formato ISO (YYYY-MM-DD)"},
+        {"name": "interagiu", "type": "BOOLEAN",
+            "description": "Se o cliente interagiu com a campanha (0/1)"},
+        {"name": "canal", "type": "TEXT",
+            "description": "Canal de marketing (email/sms/push/whatsapp)"}
+    ],
+    "description": "Registro de campanhas de marketing enviadas",
+    "foreign_keys": ["cliente_id"]
+},
+        "metadata": {
+    "database_type": "SQLite",
+    "date_format": "ISO 8601 (YYYY-MM-DD)",
+    "version": "1.0",
+    "description": "Esquema para sistema de CRM e vendas"
+}
+        }
+== == == =
+   # Obter schema dinâmico do banco
+   self.schema = self.db.get_schema()
+    self.logger.info(
+    f"AgentsManager inicializado com tabelas: {
+        list(
+            self.schema.keys())}")
+>>>>>> > dab40b277b91c7dfd8ab814e069056bf0ee0e959
+
+   def interpret_request(self, user_input: str) -> Dict[str, Any]:
         """
         Interpreta a solicitação do usuário e determina o tipo de análise.
 
@@ -325,7 +404,7 @@ class AgentsManager:
         try:
             # Preparar informações do schema para o LLM
             schema_info = self._format_schema_for_llm()
-            
+
             # Usar o prompt template com schema
             prompt = INTERPRETATION_PROMPT.format(
                 user_input=user_input,
@@ -358,7 +437,8 @@ class AgentsManager:
             schema_lines.append(f"- {table}({columns_str})")
         return "\n".join(schema_lines)
 
-    def _validate_interpretation(self, interpretation: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_interpretation(
+        self, interpretation: Dict[str, Any]) -> Dict[str, Any]:
         """Valida e corrige a interpretação baseada no schema real."""
         # Verificar se as tabelas existem
         valid_tables = []
@@ -367,11 +447,11 @@ class AgentsManager:
                 valid_tables.append(table)
             else:
                 self.logger.warning(f"Tabela '{table}' não existe no schema")
-        
+
         if not valid_tables:
             # Se nenhuma tabela válida, usar a primeira disponível
             valid_tables = [list(self.schema.keys())[0]]
-        
+
         interpretation["tabelas"] = valid_tables
         return interpretation
 
@@ -380,7 +460,12 @@ class AgentsManager:
         user_lower = user_input.lower()
 
         # Determinar tipo de gráfico
-        if any(word in user_lower for word in ['ranking', 'top', 'maior', 'menor']):
+        if any(
+    word in user_lower for word in [
+        'ranking',
+        'top',
+        'maior',
+         'menor']):
             tipo_grafico = "barras"
             tipo_analise = "ranking"
         elif any(word in user_lower for word in ['distribuição', 'participação', '%']):
@@ -396,12 +481,12 @@ class AgentsManager:
         # Usar tabelas que realmente existem
         available_tables = list(self.schema.keys())
         default_tables = []
-        
+
         if "clientes" in available_tables:
             default_tables.append("clientes")
         if "compras" in available_tables:
             default_tables.append("compras")
-        
+
         if not default_tables:
             default_tables = [available_tables[0]]
 
@@ -430,7 +515,7 @@ class AgentsManager:
         try:
             # Preparar informações do schema
             schema_info = self._format_schema_for_llm()
-            
+
             # Usar o prompt template
             prompt = SQL_PROMPT.format(
                 interpretation=json.dumps(interpretation, indent=2),
@@ -466,29 +551,30 @@ class AgentsManager:
     def execute_analysis(self, user_input: str) -> Dict[str, Any]:
         """
         Executa análise completa: interpretação, geração SQL, execução e formatação.
-        
+
         Args:
             user_input: Pergunta do usuário
-            
+
         Returns:
             Dict com resultado completo da análise
         """
         try:
             # 1. Interpretar solicitação
             interpretation = self.interpret_request(user_input)
-            
+
             # 2. Gerar SQL
             sql_query = self.generate_sql(interpretation)
-            
+
             # 3. Executar query
             df = self.db.execute_query(sql_query)
-            
+
             # 4. Formatar resposta completa
-            response = self.format_complete_response(df, interpretation, user_input)
+            response = self.format_complete_response(
+                df, interpretation, user_input)
             response["sql_query"] = sql_query
-            
+
             return response
-            
+
         except Exception as e:
             self.logger.error(f"Erro na análise completa: {e}")
             return {
@@ -526,7 +612,8 @@ class AgentsManager:
                 for col in numeric_cols[:2]:  # Máximo 2 colunas
                     total = df[col].sum()
                     media = df[col].mean()
-                    summary += f"**{col.replace('_', ' ').title()}**: Total {total:,.2f} | Média {media:,.2f}\n"
+                    summary += f"**{col.replace('_',
+     ' ').title()}**: Total {total:,.2f} | Média {media:,.2f}\n"
 
             return summary
 
@@ -534,7 +621,11 @@ class AgentsManager:
             self.logger.error(f"Erro na formatação: {e}")
             return "⚠️ **Dados processados com sucesso**, mas houve erro na formatação."
 
-    def create_visualizations(self, df: pd.DataFrame, interpretation: Dict[str, Any]) -> Tuple[Optional[Any], Optional[Any]]:
+    def create_visualizations(self,
+    df: pd.DataFrame,
+    interpretation: Dict[str,
+    Any]) -> Tuple[Optional[Any],
+     Optional[Any]]:
         """
         Cria visualizações matplotlib e plotly baseadas nos dados.
 
@@ -562,16 +653,21 @@ class AgentsManager:
             fig_plotly = None
 
             if tipo_grafico == "barras":
-                fig_mpl, fig_plotly = self._create_bar_charts(df, x_col, y_col, ax)
+                fig_mpl, fig_plotly = self._create_bar_charts(
+                    df, x_col, y_col, ax)
             elif tipo_grafico == "pizza":
-                fig_mpl, fig_plotly = self._create_pie_charts(df, x_col, y_col, ax)
+                fig_mpl, fig_plotly = self._create_pie_charts(
+                    df, x_col, y_col, ax)
             elif tipo_grafico == "linha":
-                fig_mpl, fig_plotly = self._create_line_charts(df, x_col, y_col, ax)
+                fig_mpl, fig_plotly = self._create_line_charts(
+                    df, x_col, y_col, ax)
             elif tipo_grafico == "scatter":
-                fig_mpl, fig_plotly = self._create_scatter_charts(df, x_col, y_col, ax)
+                fig_mpl, fig_plotly = self._create_scatter_charts(
+                    df, x_col, y_col, ax)
             else:
                 # Default para barras
-                fig_mpl, fig_plotly = self._create_bar_charts(df, x_col, y_col, ax)
+                fig_mpl, fig_plotly = self._create_bar_charts(
+                    df, x_col, y_col, ax)
 
             # Configurações gerais matplotlib
             plt.title(
@@ -587,7 +683,8 @@ class AgentsManager:
             self.logger.error(f"Erro na criação de visualizações: {e}")
             return None, None
 
-    def _create_bar_charts(self, df: pd.DataFrame, x_col: str, y_col: str, ax) -> Tuple[Any, Any]:
+    def _create_bar_charts(self, df: pd.DataFrame,
+                           x_col: str, y_col: str, ax) -> Tuple[Any, Any]:
         """Cria gráficos de barras matplotlib e plotly."""
         try:
             # Matplotlib
@@ -608,17 +705,20 @@ class AgentsManager:
 
             # Plotly
             fig_plotly = px.bar(
-                df, x=x_col, y=y_col, 
+                df, x=x_col, y=y_col,
                 title=f"{y_col.replace('_', ' ').title()} por {x_col.replace('_', ' ').title()}"
             )
-            fig_plotly.update_traces(texttemplate='%{y:,.0f}', textposition='outside')
+            fig_plotly.update_traces(
+    texttemplate='%{y:,.0f}',
+     textposition='outside')
 
             return plt.gcf(), fig_plotly
         except Exception as e:
             self.logger.error(f"Erro nos gráficos de barras: {e}")
             return plt.gcf(), None
 
-    def _create_pie_charts(self, df: pd.DataFrame, x_col: str, y_col: str, ax) -> Tuple[Any, Any]:
+    def _create_pie_charts(self, df: pd.DataFrame,
+                           x_col: str, y_col: str, ax) -> Tuple[Any, Any]:
         """Cria gráficos de pizza matplotlib e plotly."""
         try:
             # Matplotlib
@@ -634,18 +734,26 @@ class AgentsManager:
                 df, values=y_col, names=x_col,
                 title=f"Distribuição de {y_col.replace('_', ' ').title()}"
             )
-            fig_plotly.update_traces(textposition='inside', textinfo='percent+label')
+            fig_plotly.update_traces(
+    textposition='inside',
+     textinfo='percent+label')
 
             return plt.gcf(), fig_plotly
         except Exception as e:
             self.logger.error(f"Erro nos gráficos de pizza: {e}")
             return plt.gcf(), None
 
-    def _create_line_charts(self, df: pd.DataFrame, x_col: str, y_col: str, ax) -> Tuple[Any, Any]:
+    def _create_line_charts(self, df: pd.DataFrame,
+                            x_col: str, y_col: str, ax) -> Tuple[Any, Any]:
         """Cria gráficos de linha matplotlib e plotly."""
         try:
             # Matplotlib
-            ax.plot(df[x_col], df[y_col], marker='o', linewidth=2, markersize=6)
+            ax.plot(
+    df[x_col],
+    df[y_col],
+    marker='o',
+    linewidth=2,
+     markersize=6)
             ax.set_xlabel(x_col.replace('_', ' ').title())
             ax.set_ylabel(y_col.replace('_', ' ').title())
             ax.grid(True, alpha=0.3)
@@ -663,7 +771,8 @@ class AgentsManager:
             self.logger.error(f"Erro nos gráficos de linha: {e}")
             return plt.gcf(), None
 
-    def _create_scatter_charts(self, df: pd.DataFrame, x_col: str, y_col: str, ax) -> Tuple[Any, Any]:
+    def _create_scatter_charts(
+        self, df: pd.DataFrame, x_col: str, y_col: str, ax) -> Tuple[Any, Any]:
         """Cria gráficos de dispersão matplotlib e plotly."""
         try:
             # Matplotlib
@@ -674,16 +783,19 @@ class AgentsManager:
 
             # Plotly
             fig_plotly = px.scatter(
-                df, x=x_col, y=y_col,
-                title=f"Correlação: {x_col.replace('_', ' ').title()} vs {y_col.replace('_', ' ').title()}"
-            )
+    df, x=x_col, y=y_col, title=f"Correlação: {
+        x_col.replace(
+            '_', ' ').title()} vs {
+                y_col.replace(
+                    '_', ' ').title()}" )
 
             return plt.gcf(), fig_plotly
         except Exception as e:
             self.logger.error(f"Erro nos gráficos de dispersão: {e}")
             return plt.gcf(), None
 
-    def generate_summary(self, df: pd.DataFrame, interpretation: Dict[str, Any]) -> str:
+    def generate_summary(self, df: pd.DataFrame,
+                         interpretation: Dict[str, Any]) -> str:
         """
         Gera resumo textual inteligente dos dados.
 
@@ -739,10 +851,15 @@ class AgentsManager:
 
         except Exception as e:
             self.logger.error(f"Erro na geração do resumo: {e}")
-            return f"⚠️ **Dados obtidos**: {len(df)} registros. Resumo detalhado indisponível."
+            return f"⚠️ **Dados obtidos**: {
+    len(df)} registros. Resumo detalhado indisponível."
 
-    def format_complete_response(self, df: pd.DataFrame, interpretation: Dict[str, Any],
-                                 user_input: str) -> Dict[str, Any]:
+    def format_complete_response(self,
+    df: pd.DataFrame,
+    interpretation: Dict[str,
+    Any],
+    user_input: str) -> Dict[str,
+     Any]:
         """
         Formata resposta completa com tabela, resumo e gráficos.
 
@@ -777,15 +894,20 @@ class AgentsManager:
             response["table_html"] = self._format_table_html(df)
 
             # Criar visualizações
-            mpl_fig, plotly_fig = self.create_visualizations(df, interpretation)
+            mpl_fig, plotly_fig = self.create_visualizations(
+                df, interpretation)
             response["matplotlib_fig"] = mpl_fig
             response["plotly_fig"] = plotly_fig
 
-            self.logger.info(f"Resposta completa gerada com {len(df)} registros")
+            self.logger.info(
+    f"Resposta completa gerada com {
+        len(df)} registros")
 
         except Exception as e:
             self.logger.error(f"Erro na formatação da resposta: {e}")
-            response["summary"] = f"⚠️ **Dados obtidos**: {len(df)} registros. Erro na formatação: {str(e)}"
+            response["summary"] = f"⚠️ **Dados obtidos**: {
+    len(df)} registros. Erro na formatação: {
+        str(e)}"
 
         return response
 
@@ -803,7 +925,8 @@ class AgentsManager:
                     formatted_df[col] = formatted_df[col].apply(
                         lambda x: f"R$ {x:,.2f}")
                 else:
-                    formatted_df[col] = formatted_df[col].apply(lambda x: f"{x:,.0f}")
+                    formatted_df[col] = formatted_df[col].apply(
+                        lambda x: f"{x:,.0f}")
 
             # Gerar HTML com estilo
             html = formatted_df.to_html(
@@ -815,7 +938,8 @@ class AgentsManager:
 
             # Adicionar indicador se há mais dados
             if len(df) > 20:
-                html += f"<p><small><i>Mostrando 20 de {len(df)} registros totais</i></small></p>"
+                html += f"<p><small><i>Mostrando 20 de {
+    len(df)} registros totais</i></small></p>"
 
             return html
 
@@ -826,7 +950,7 @@ class AgentsManager:
     def get_database_info(self) -> Dict[str, Any]:
         """
         Retorna informações sobre o banco de dados.
-        
+
         Returns:
             Dict com informações do banco
         """
@@ -838,32 +962,36 @@ class AgentsManager:
                 "table_count": len(self.schema),
                 "tables": list(self.schema.keys())
             }
-            
+
             # Adicionar contagem de registros por tabela
             table_counts = {}
             for table in self.schema.keys():
                 try:
-                    count_df = self.db.execute_query(f"SELECT COUNT(*) as count FROM {table}")
+                    count_df = self.db.execute_query(
+    f"SELECT COUNT(*) as count FROM {table}")
                     table_counts[table] = count_df.iloc[0]['count'] if not count_df.empty else 0
                 except Exception as e:
-                    self.logger.warning(f"Erro ao contar registros da tabela {table}: {e}")
+                    self.logger.warning(
+    f"Erro ao contar registros da tabela {table}: {e}")
                     table_counts[table] = "N/A"
-            
+
             info["table_record_counts"] = table_counts
             return info
-            
+
         except Exception as e:
             self.logger.error(f"Erro ao obter informações do banco: {e}")
             return {
-                "error": str(e),
-                "database_path": str(self.db.db_path) if hasattr(self, 'db') else "N/A",
-                "database_exists": False
-            }
+    "error": str(e),
+    "database_path": str(
+        self.db.db_path) if hasattr(
+            self,
+            'db') else "N/A",
+             "database_exists": False }
 
     def test_connection(self) -> Dict[str, Any]:
         """
         Testa a conexão com o banco de dados.
-        
+
         Returns:
             Dict com resultado do teste
         """
@@ -873,29 +1001,32 @@ class AgentsManager:
                 cursor = conn.cursor()
                 cursor.execute("SELECT 1")
                 result = cursor.fetchone()
-            
+
             # Testar algumas queries básicas
             schema = self.db.get_schema()
             first_table = list(schema.keys())[0]
             sample_data = self.db.get_table_sample(first_table, 1)
-            
+
             return {
-                "success": True,
-                "message": "Conexão com banco de dados estabelecida com sucesso",
-                "database_path": str(self.db.db_path),
-                "tables_available": list(schema.keys()),
-                "sample_query_successful": not sample_data.empty,
-                "total_tables": len(schema)
-            }
-            
+    "success": True,
+    "message": "Conexão com banco de dados estabelecida com sucesso",
+    "database_path": str(
+        self.db.db_path),
+        "tables_available": list(
+            schema.keys()),
+            "sample_query_successful": not sample_data.empty,
+             "total_tables": len(schema) }
+
         except Exception as e:
             self.logger.error(f"Erro no teste de conexão: {e}")
             return {
-                "success": False,
-                "error": str(e),
-                "message": "Falha na conexão com o banco de dados",
-                "database_path": str(self.db.db_path) if hasattr(self, 'db') else "N/A"
-            }
+    "success": False,
+    "error": str(e),
+    "message": "Falha na conexão com o banco de dados",
+    "database_path": str(
+        self.db.db_path) if hasattr(
+            self,
+             'db') else "N/A" }
 
     def refresh_schema(self):
         """Força atualização do schema do banco de dados."""
@@ -906,14 +1037,15 @@ class AgentsManager:
             self.logger.error(f"Erro ao atualizar schema: {e}")
 
 # Função utilitária para criar instância com configuração padrão
+
 def create_agents_manager(llm, db_path: Optional[str] = None) -> AgentsManager:
     """
     Cria uma instância do AgentsManager com configuração padrão.
-    
+
     Args:
         llm: Modelo de linguagem
         db_path: Caminho customizado para o banco (opcional)
-        
+
     Returns:
         Instância configurada do AgentsManager
     """
@@ -923,10 +1055,10 @@ def create_agents_manager(llm, db_path: Optional[str] = None) -> AgentsManager:
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )
-        
+
         # Criar gerenciador
         agents_manager = AgentsManager(llm, db_path=db_path)
-        
+
         # Testar conexão
         test_result = agents_manager.test_connection()
         if test_result["success"]:
@@ -935,9 +1067,9 @@ def create_agents_manager(llm, db_path: Optional[str] = None) -> AgentsManager:
             print(f"📊 Tabelas: {', '.join(test_result['tables_available'])}")
         else:
             print(f"❌ Erro na inicialização: {test_result['error']}")
-            
+
         return agents_manager
-        
+
     except Exception as e:
         print(f"❌ Erro ao criar AgentsManager: {e}")
         raise
@@ -946,7 +1078,7 @@ def create_agents_manager(llm, db_path: Optional[str] = None) -> AgentsManager:
 # Exemplo de uso
 if __name__ == "__main__":
     # Exemplo de como usar o AgentsManager
-    
+
     # Simulação de LLM para teste (substitua por seu LLM real)
     class MockLLM:
         def __call__(self, prompt):
@@ -967,23 +1099,26 @@ if __name__ == "__main__":
                 '''
             else:
                 return "SELECT estado, COUNT(*) as total FROM clientes GROUP BY estado ORDER BY total DESC LIMIT 10"
-    
+
     try:
         # Criar instância de teste
         mock_llm = MockLLM()
         agents = create_agents_manager(mock_llm)
-        
+
         # Testar funcionalidades
         print("\n🔍 Informações do banco:")
         db_info = agents.get_database_info()
         for key, value in db_info.items():
             print(f"  {key}: {value}")
-        
+
         # Exemplo de análise
         print("\n📊 Executando análise de exemplo...")
-        result = agents.execute_analysis("Mostre o ranking de clientes por estado")
-        print(f"✅ Análise concluída: {result['total_records']} registros encontrados")
-        
+        result = agents.execute_analysis(
+            "Mostre o ranking de clientes por estado")
+        print(
+    f"✅ Análise concluída: {
+        result['total_records']} registros encontrados")
+
     except Exception as e:
         print(f"❌ Erro no exemplo: {e}")
         print("💡 Certifique-se de que o banco 'data/clientes_completo.db' existe")
