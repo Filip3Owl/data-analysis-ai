@@ -1,6 +1,7 @@
 from langchain.prompts import PromptTemplate
 
 # Prompt para interpretação das perguntas
+# Adaptar prompts
 INTERPRETATION_PROMPT = PromptTemplate(
     input_variables=["user_input"],
     template="""
@@ -97,6 +98,10 @@ SQL_PROMPT = PromptTemplate(
     Você é um especialista em SQLite. Gere uma query SQL válida seguindo estas regras:
 
     ### Tabelas Disponíveis e Estrutura:
+<<<<<<< HEAD
+=======
+    ### Tabelas Disponíveis e Estrutura:
+>>>>>>> bc4e0efed71b30ea8e6a18c6ee10c7d8c613a098
     1. clientes (
         id INTEGER PRIMARY KEY,
         nome TEXT,

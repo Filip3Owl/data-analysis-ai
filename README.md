@@ -352,7 +352,6 @@ O sistema oferece:
 - [ ] Interface mobile responsiva
 - [ ] Suporte a múltiplos idiomas
 - [ ] Temas customizáveis
-- [ ] Integração com Slack/Teams
 - [ ] Scheduled reports
 - [ ] Data governance
 
