@@ -8,7 +8,6 @@ INTERPRETATION_PROMPT = PromptTemplate(
 
     ### 📊 Estrutura do Banco de Dados:
 
-<<<<<<< HEAD
 
     - sqlite_sequence
     - clientes
@@ -53,46 +52,6 @@ INTERPRETATION_PROMPT = PromptTemplate(
     - data_envio: TEXT
     - interagiu: BOOLEAN
     - canal: TEXT
-=======
-    Estrutura da tabela 'clientes':
-    Colunas:
-    - id: INTEGER PRIMARY KEY
-    - nome: TEXT
-    - email: TEXT
-    - idade: INTEGER
-    - cidade: TEXT
-    - estado: TEXT
-    - profissao: TEXT
-    - genero: TEXT
-
-    Estrutura da tabela 'compras':
-    Colunas:
-    - id: INTEGER PRIMARY KEY
-    - cliente_id: INTEGER
-    - data_compra: TEXT
-    - valor: REAL
-    - categoria: TEXT
-    - canal: TEXT
-
-    Estrutura da tabela 'suporte':
-    Colunas:
-    - id: INTEGER PRIMARY KEY
-    - cliente_id: INTEGER
-    - data_contato: TEXT
-    - tipo_contato: TEXT
-    - resolvido: BOOLEAN
-    - canal: TEXT
-
-    Estrutura da tabela 'campanhas_marketing':
-    Colunas:
-    - id: INTEGER PRIMARY KEY
-    - cliente_id: INTEGER
-    - nome_campanha: TEXT
-    - data_envio: TEXT
-    - interagiu: BOOLEAN
-    - canal: TEXT
-
->>>>>>> dab40b277b91c7dfd8ab814e069056bf0ee0e959
 
     ### Solicitação do Usuário:
     "{user_input}"
@@ -137,7 +96,6 @@ SQL_PROMPT = PromptTemplate(
     template="""
     Você é um especialista em SQLite. Gere uma query SQL válida seguindo estas regras:
 
-<<<<<<< HEAD
     ### Tabelas Disponíveis e Estrutura:
     1. clientes (
         id INTEGER PRIMARY KEY,
@@ -185,46 +143,6 @@ SQL_PROMPT = PromptTemplate(
     - compras → co
     - suporte → s
     - campanhas_marketing → cm
-=======
-    ### Tabelas Disponíveis:
-    Estrutura da tabela 'clientes':
-    Colunas:
-    - id: INTEGER PRIMARY KEY
-    - nome: TEXT
-    - email: TEXT
-    - idade: INTEGER
-    - cidade: TEXT
-    - estado: TEXT
-    - profissao: TEXT
-    - genero: TEXT
-
-    Estrutura da tabela 'compras':
-    Colunas:
-    - id: INTEGER PRIMARY KEY
-    - cliente_id: INTEGER
-    - data_compra: TEXT
-    - valor: REAL
-    - categoria: TEXT
-    - canal: TEXT
-
-    Estrutura da tabela 'suporte':
-    Colunas:
-    - id: INTEGER PRIMARY KEY
-    - cliente_id: INTEGER
-    - data_contato: TEXT
-    - tipo_contato: TEXT
-    - resolvido: BOOLEAN
-    - canal: TEXT
-
-    Estrutura da tabela 'campanhas_marketing':
-    Colunas:
-    - id: INTEGER PRIMARY KEY
-    - cliente_id: INTEGER
-    - nome_campanha: TEXT
-    - data_envio: TEXT
-    - interagiu: BOOLEAN
-    - canal: TEXT
->>>>>>> dab40b277b91c7dfd8ab814e069056bf0ee0e959
 
     Tabela 'compras':
     → Coluna 'cliente_id' referencia:
