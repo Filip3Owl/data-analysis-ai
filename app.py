@@ -641,14 +641,14 @@ with st.container():
         default_limit = min(1000, max_records)
 
         record_limit = st.slider(
-            f"📄 Limite de registros (máx: {
-                max_records:,    }):",
+            f"📄 Limite de registros (máx: {max_records:,}):",
             min_value=10,
             max_value=max_records,
             value=default_limit,
             step=50,
-            help=f"Defina quantos registros analisar. Total disponível no banco: {
-                total_records:,        }")
+            help=f"Defina quantos registros analisar. Total disponível no banco: {total_records:,}"
+)
+
 
     with col3:
         # Mostrar informação sobre o limite com contexto do banco
