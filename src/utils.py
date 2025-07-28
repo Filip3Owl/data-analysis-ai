@@ -122,7 +122,12 @@ class AgentsManager:
         user_lower = user_input.lower()
 
         # Determinar tipo de gráfico
-        if any(word in user_lower for word in ['ranking', 'top', 'maior', 'menor']):
+        if any(
+            word in user_lower for word in [
+                'ranking',
+                'top',
+                'maior',
+                'menor']):
             tipo_grafico = "barras"
             tipo_analise = "ranking"
         elif any(word in user_lower for word in ['distribuição', 'participação', '%']):
@@ -222,14 +227,16 @@ class AgentsManager:
         categorical_cols = df.select_dtypes(
             include=['object', 'category']).columns.tolist()
 
-        # Para gráficos de barras e pizza: precisa de pelo menos 1 categórica e 1 numérica
+        # Para gráficos de barras e pizza: precisa de pelo menos 1 categórica e
+        # 1 numérica
         if chart_type in ["barras", "pizza"]:
             if len(numeric_cols) == 0:
                 # Se não há colunas numéricas, criar uma contagem
                 if len(categorical_cols) > 0:
                     x_col = categorical_cols[0]
                     # Criar coluna de contagem
-                    df_grouped = df.groupby(x_col).size().reset_index(name='count')
+                    df_grouped = df.groupby(
+                        x_col).size().reset_index(name='count')
                     return True, x_col, 'count'
                 else:
                     return False, "", ""
@@ -299,7 +306,8 @@ class AgentsManager:
             # Limitar dados para visualização (máximo 20 categorias)
             if len(df_plot) > 20:
                 df_plot = df_plot.head(20)
-                self.logger.info(f"Dados limitados a 20 registros para visualização")
+                self.logger.info(
+                    f"Dados limitados a 20 registros para visualização")
 
             # Matplotlib Figure
             fig_mpl, ax = plt.subplots(figsize=(12, 8))
@@ -308,9 +316,11 @@ class AgentsManager:
             fig_plotly = None
 
             if tipo_grafico == "barras":
-                fig_mpl, fig_plotly = self._create_bar_charts(df_plot, x_col, y_col, ax)
+                fig_mpl, fig_plotly = self._create_bar_charts(
+                    df_plot, x_col, y_col, ax)
             elif tipo_grafico == "pizza":
-                fig_mpl, fig_plotly = self._create_pie_charts(df_plot, x_col, y_col, ax)
+                fig_mpl, fig_plotly = self._create_pie_charts(
+                    df_plot, x_col, y_col, ax)
             elif tipo_grafico == "linha":
                 fig_mpl, fig_plotly = self._create_line_charts(
                     df_plot, x_col, y_col, ax)
@@ -319,7 +329,8 @@ class AgentsManager:
                     df_plot, x_col, y_col, ax)
             else:
                 # Default para barras
-                fig_mpl, fig_plotly = self._create_bar_charts(df_plot, x_col, y_col, ax)
+                fig_mpl, fig_plotly = self._create_bar_charts(
+                    df_plot, x_col, y_col, ax)
 
             # Configurações gerais matplotlib
             plt.title(
@@ -347,8 +358,15 @@ class AgentsManager:
             fig, ax = plt.subplots(figsize=(10, 6))
 
             # Apenas mostrar os primeiros valores como texto
-            ax.text(0.5, 0.5, f"Dados disponíveis:\n{len(df)} registros",
-                    ha='center', va='center', transform=ax.transAxes, fontsize=14)
+            ax.text(
+                0.5,
+                0.5,
+                f"Dados disponíveis:\n{
+                    len(df)} registros",
+                ha='center',
+                va='center',
+                transform=ax.transAxes,
+                fontsize=14)
             ax.set_xlim(0, 1)
             ax.set_ylim(0, 1)
             ax.axis('off')
@@ -369,7 +387,8 @@ class AgentsManager:
                         df[y_col] = pd.to_numeric(df[y_col], errors='coerce')
                         df = df.dropna(subset=[y_col])
                     except Exception as e:
-                        self.logger.warning(f"Não foi possível converter {y_col} para numérico: {e}")
+                        self.logger.warning(
+                            f"Não foi possível converter {y_col} para numérico: {e}")
                         # Se não puder converter, usar contagem
                         df = df.groupby(x_col).size().reset_index(name='count')
                         y_col = 'count'
@@ -410,7 +429,9 @@ class AgentsManager:
                         ' ').title()}",
                 color=y_col if y_col != 'count' else None,
                 color_continuous_scale="viridis" if y_col != 'count' else None)
-            fig_plotly.update_traces(texttemplate='%{y:,.0f}', textposition='outside')
+            fig_plotly.update_traces(
+                texttemplate='%{y:,.0f}',
+                textposition='outside')
             fig_plotly.update_layout(showlegend=False)
 
             return plt.gcf(), fig_plotly
@@ -431,13 +452,15 @@ class AgentsManager:
                         df[y_col] = pd.to_numeric(df[y_col], errors='coerce')
                         df = df.dropna(subset=[y_col])
                     except Exception as e:
-                        self.logger.warning(f"Não foi possível converter {y_col} para numérico: {e}")
+                        self.logger.warning(
+                            f"Não foi possível converter {y_col} para numérico: {e}")
                         # Se não puder converter, usar contagem
                         df = df.groupby(x_col).size().reset_index(name='count')
                         y_col = 'count'
 
             if df.empty or df[y_col].sum() == 0:
-                raise ValueError("Nenhum dado numérico válido para gráfico de pizza")
+                raise ValueError(
+                    "Nenhum dado numérico válido para gráfico de pizza")
 
             # Filtrar valores negativos para pizza
             df = df[df[y_col] > 0]
@@ -456,7 +479,9 @@ class AgentsManager:
                 df, values=y_col, names=x_col,
                 title=f"Distribuição de {y_col.replace('_', ' ').title()}"
             )
-            fig_plotly.update_traces(textposition='inside', textinfo='percent+label')
+            fig_plotly.update_traces(
+                textposition='inside',
+                textinfo='percent+label')
 
             return plt.gcf(), fig_plotly
 
@@ -474,22 +499,35 @@ class AgentsManager:
                     df[y_col] = pd.to_numeric(df[y_col], errors='coerce')
                     df = df.dropna(subset=[y_col])
                 except Exception as e:
-                    self.logger.warning(f"Não foi possível converter {y_col} para numérico: {e}")
+                    self.logger.warning(
+                        f"Não foi possível converter {y_col} para numérico: {e}")
                     # Se não puder converter, usar contagem
                     df = df.groupby(x_col).size().reset_index(name='count')
                     y_col = 'count'
 
             if df.empty:
-                raise ValueError("Nenhum dado numérico válido para gráfico de linha")
+                raise ValueError(
+                    "Nenhum dado numérico válido para gráfico de linha")
 
             # Se x for categórico, usar índices numéricos
             if df[x_col].dtype == 'object':
                 x_values = range(len(df))
-                ax.plot(x_values, df[y_col], marker='o', linewidth=2, markersize=6)
+                ax.plot(
+                    x_values,
+                    df[y_col],
+                    marker='o',
+                    linewidth=2,
+                    markersize=6)
                 ax.set_xticks(x_values)
-                ax.set_xticklabels(df[x_col].astype(str), rotation=45, ha='right')
+                ax.set_xticklabels(
+                    df[x_col].astype(str), rotation=45, ha='right')
             else:
-                ax.plot(df[x_col], df[y_col], marker='o', linewidth=2, markersize=6)
+                ax.plot(
+                    df[x_col],
+                    df[y_col],
+                    marker='o',
+                    linewidth=2,
+                    markersize=6)
 
             ax.set_xlabel(x_col.replace('_', ' ').title())
             ax.set_ylabel(y_col.replace('_', ' ').title())
@@ -519,7 +557,8 @@ class AgentsManager:
                     try:
                         df[col] = pd.to_numeric(df[col], errors='coerce')
                     except Exception as e:
-                        self.logger.warning(f"Não foi possível converter {col} para numérico: {e}")
+                        self.logger.warning(
+                            f"Não foi possível converter {col} para numérico: {e}")
                         # Se não puder converter, usar fallback
                         return self._create_fallback_chart(df)
 
@@ -549,7 +588,8 @@ class AgentsManager:
             self.logger.error(f"Erro na criação de gráfico de dispersão: {e}")
             raise
 
-    def generate_summary(self, df: pd.DataFrame, interpretation: Dict[str, Any]) -> str:
+    def generate_summary(self, df: pd.DataFrame,
+                         interpretation: Dict[str, Any]) -> str:
         """
         Gera resumo textual inteligente dos dados.
 
@@ -581,13 +621,19 @@ class AgentsManager:
             if tipo_analise == "ranking":
                 summary_parts.extend(self._analyze_ranking(df, numeric_cols))
             elif tipo_analise == "distribuicao":
-                summary_parts.extend(self._analyze_distribution(df, numeric_cols))
+                summary_parts.extend(
+                    self._analyze_distribution(
+                        df, numeric_cols))
             elif tipo_analise == "tendencia":
                 summary_parts.extend(self._analyze_trend(df, numeric_cols))
             elif tipo_analise == "comparacao":
-                summary_parts.extend(self._analyze_comparison(df, numeric_cols))
+                summary_parts.extend(
+                    self._analyze_comparison(
+                        df, numeric_cols))
             else:
-                summary_parts.extend(self._analyze_general_kpis(df, numeric_cols))
+                summary_parts.extend(
+                    self._analyze_general_kpis(
+                        df, numeric_cols))
 
             # Insights adicionais
             if len(numeric_cols) > 0:
@@ -600,7 +646,10 @@ class AgentsManager:
             return f"⚠️ **Dados obtidos**: {
                 len(df)} registros. Resumo detalhado indisponível."
 
-    def _analyze_ranking(self, df: pd.DataFrame, numeric_cols: List[str]) -> List[str]:
+    def _analyze_ranking(
+            self,
+            df: pd.DataFrame,
+            numeric_cols: List[str]) -> List[str]:
         """Análise específica para rankings."""
         insights = []
 
@@ -654,7 +703,10 @@ class AgentsManager:
 
         return insights
 
-    def _analyze_trend(self, df: pd.DataFrame, numeric_cols: List[str]) -> List[str]:
+    def _analyze_trend(
+            self,
+            df: pd.DataFrame,
+            numeric_cols: List[str]) -> List[str]:
         """Análise específica para tendências."""
         insights = []
 
@@ -761,8 +813,12 @@ class AgentsManager:
 
         return insights
 
-    def format_complete_response(self, df: pd.DataFrame, interpretation: Dict[str, Any],
-                                 user_input: str) -> Dict[str, Any]:
+    def format_complete_response(self,
+                                 df: pd.DataFrame,
+                                 interpretation: Dict[str,
+                                                      Any],
+                                 user_input: str) -> Dict[str,
+                                                          Any]:
         """
         Formata resposta completa com tabela, resumo e gráficos.
 
@@ -797,11 +853,14 @@ class AgentsManager:
             response["table_html"] = self._format_table_html(df)
 
             # Criar visualizações
-            mpl_fig, plotly_fig = self.create_visualizations(df, interpretation)
+            mpl_fig, plotly_fig = self.create_visualizations(
+                df, interpretation)
             response["matplotlib_fig"] = mpl_fig
             response["plotly_fig"] = plotly_fig
 
-            self.logger.info(f"Resposta completa gerada com {len(df)} registros")
+            self.logger.info(
+                f"Resposta completa gerada com {
+                    len(df)} registros")
 
         except Exception as e:
             self.logger.error(f"Erro na formatação da resposta: {e}")
@@ -825,7 +884,8 @@ class AgentsManager:
                     formatted_df[col] = formatted_df[col].apply(
                         lambda x: f"R$ {x:,.2f}")
                 else:
-                    formatted_df[col] = formatted_df[col].apply(lambda x: f"{x:,.0f}")
+                    formatted_df[col] = formatted_df[col].apply(
+                        lambda x: f"{x:,.0f}")
 
             # Gerar HTML com estilo
             html = formatted_df.to_html(
