@@ -8,78 +8,78 @@ INTERPRETATION_PROMPT = PromptTemplate(
 
     ### 📊 Estrutura do Banco de Dados:
 
-1. clientes (
-    id INTEGER,
-    nome TEXT,
-    email TEXT,
-    idade INTEGER,
-    cidade TEXT,
-    estado TEXT,
-    profissao TEXT,
-    genero TEXT
-)
+    1. clientes (
+        id INTEGER,
+        nome TEXT,
+        email TEXT,
+        idade INTEGER,
+        cidade TEXT,
+        estado TEXT,
+        profissao TEXT,
+        genero TEXT
+    )
 
-2. compras (
-    id INTEGER,
-    cliente_id INTEGER,
-    data_compra TEXT (formato ISO: YYYY-MM-DD),
-    valor REAL,
-    categoria TEXT,
-    canal TEXT
-)
+    2. compras (
+        id INTEGER,
+        cliente_id INTEGER,
+        data_compra TEXT (formato ISO: YYYY-MM-DD),
+        valor REAL,
+        categoria TEXT,
+        canal TEXT
+    )
 
-3. suporte (
-    id INTEGER,
-    cliente_id INTEGER,
-    data_contato TEXT (formato ISO: YYYY-MM-DD),
-    tipo_contato TEXT,
-    resolvido BOOLEAN,
-    canal TEXT
-)
+    3. suporte (
+        id INTEGER,
+        cliente_id INTEGER,
+        data_contato TEXT (formato ISO: YYYY-MM-DD),
+        tipo_contato TEXT,
+        resolvido BOOLEAN,
+        canal TEXT
+    )
 
-4. campanhas_marketing (
-    id INTEGER,
-    cliente_id INTEGER,
-    nome_campanha TEXT,
-    data_envio TEXT (formato ISO: YYYY-MM-DD),
-    interagiu BOOLEAN,
-    canal TEXT
-)
+    4. campanhas_marketing (
+        id INTEGER,
+        cliente_id INTEGER,
+        nome_campanha TEXT,
+        data_envio TEXT (formato ISO: YYYY-MM-DD),
+        interagiu BOOLEAN,
+        canal TEXT
+    )
 
-    ### Solicitação do Usuário:
-    "{user_input}"
+        ### Solicitação do Usuário:
+        "{user_input}"
 
-    ### Instruções:
-    1. Analise a pergunta e identifique quais tabelas são necessárias
-    2. Determine os filtros relevantes (WHERE)
-    3. Identifique as métricas a calcular (COUNT, SUM, AVG, etc.)
-    4. Especifique os campos para agrupamento (GROUP BY)
-    5. Defina o formato de saída desejado (tabela/gráfico/texto)
-    6. Para ordenação, considere ORDER BY quando relevante
+        ### Instruções:
+        1. Analise a pergunta e identifique quais tabelas são necessárias
+        2. Determine os filtros relevantes (WHERE)
+        3. Identifique as métricas a calcular (COUNT, SUM, AVG, etc.)
+        4. Especifique os campos para agrupamento (GROUP BY)
+        5. Defina o formato de saída desejado (tabela/gráfico/texto)
+        6. Para ordenação, considere ORDER BY quando relevante
 
-    Retorne APENAS um JSON válido com esta estrutura:
-    {{
-        "intencao": "Descrição clara do objetivo",
-        "tabelas": ["lista", "de", "tabelas"],
-        "filtros": ["condicao1", "condicao2"],
-        "agregacoes": ["funcao(coluna) AS alias"],
-        "grupo_por": ["coluna1", "coluna2"],
-        "ordenacao": ["coluna DESC/ASC"],
-        "limite": 10,
-        "formato_saida": "tabela/gráfico/texto"
-    }}
+        Retorne APENAS um JSON válido com esta estrutura:
+        {{
+            "intencao": "Descrição clara do objetivo",
+            "tabelas": ["lista", "de", "tabelas"],
+            "filtros": ["condicao1", "condicao2"],
+            "agregacoes": ["funcao(coluna) AS alias"],
+            "grupo_por": ["coluna1", "coluna2"],
+            "ordenacao": ["coluna DESC/ASC"],
+            "limite": 10,
+            "formato_saida": "tabela/gráfico/texto"
+        }}
 
-    Exemplo para "Top 5 estados com mais vendas em 2024":
-    {{
-        "intencao": "Ranking dos 5 estados com maior volume de vendas em 2024",
-        "tabelas": ["compras", "clientes"],
-        "filtros": ["strftime('%Y', compras.data_compra) = '2024'"],
-        "agregacoes": ["SUM(compras.valor) AS total_vendas", "COUNT(compras.id) AS total_pedidos"],
-        "grupo_por": ["clientes.estado"],
-        "ordenacao": ["total_vendas DESC"],
-        "limite": 5,
-        "formato_saida": "tabela"
-    }}
+        Exemplo para "Top 5 estados com mais vendas em 2024":
+        {{
+            "intencao": "Ranking dos 5 estados com maior volume de vendas em 2024",
+            "tabelas": ["compras", "clientes"],
+            "filtros": ["strftime('%Y', compras.data_compra) = '2024'"],
+            "agregacoes": ["SUM(compras.valor) AS total_vendas", "COUNT(compras.id) AS total_pedidos"],
+            "grupo_por": ["clientes.estado"],
+            "ordenacao": ["total_vendas DESC"],
+            "limite": 5,
+            "formato_saida": "tabela"
+        }}
     """ 
 )
 
