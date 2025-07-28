@@ -8,43 +8,44 @@ INTERPRETATION_PROMPT = PromptTemplate(
 
     ### 📊 Estrutura do Banco de Dados:
 
-1. clientes (
-    id INTEGER,
-    nome TEXT,
-    email TEXT,
-    idade INTEGER,
-    cidade TEXT,
-    estado TEXT,
-    profissao TEXT,
-    genero TEXT
-)
+    Estrutura da tabela 'clientes':
+    Colunas:
+    - id: INTEGER PRIMARY KEY
+    - nome: TEXT
+    - email: TEXT
+    - idade: INTEGER
+    - cidade: TEXT
+    - estado: TEXT
+    - profissao: TEXT
+    - genero: TEXT
 
-2. compras (
-    id INTEGER,
-    cliente_id INTEGER,
-    data_compra TEXT (formato ISO: YYYY-MM-DD),
-    valor REAL,
-    categoria TEXT,
-    canal TEXT
-)
+    Estrutura da tabela 'compras':
+    Colunas:
+    - id: INTEGER PRIMARY KEY
+    - cliente_id: INTEGER
+    - data_compra: TEXT
+    - valor: REAL
+    - categoria: TEXT
+    - canal: TEXT
 
-3. suporte (
-    id INTEGER,
-    cliente_id INTEGER,
-    data_contato TEXT (formato ISO: YYYY-MM-DD),
-    tipo_contato TEXT,
-    resolvido BOOLEAN,
-    canal TEXT
-)
+    Estrutura da tabela 'suporte':
+    Colunas:
+    - id: INTEGER PRIMARY KEY
+    - cliente_id: INTEGER
+    - data_contato: TEXT
+    - tipo_contato: TEXT
+    - resolvido: BOOLEAN
+    - canal: TEXT
 
-4. campanhas_marketing (
-    id INTEGER,
-    cliente_id INTEGER,
-    nome_campanha TEXT,
-    data_envio TEXT (formato ISO: YYYY-MM-DD),
-    interagiu BOOLEAN,
-    canal TEXT
-)
+    Estrutura da tabela 'campanhas_marketing':
+    Colunas:
+    - id: INTEGER PRIMARY KEY
+    - cliente_id: INTEGER
+    - nome_campanha: TEXT
+    - data_envio: TEXT
+    - interagiu: BOOLEAN
+    - canal: TEXT
+
 
     ### Solicitação do Usuário:
     "{user_input}"
@@ -90,47 +91,70 @@ SQL_PROMPT = PromptTemplate(
     Você é um especialista em SQLite. Gere uma query SQL válida seguindo estas regras:
 
     ### Tabelas Disponíveis:
-    1. clientes (
-    id INTEGER,
-    nome TEXT,
-    email TEXT,
-    idade INTEGER,
-    cidade TEXT,
-    estado TEXT,
-    profissao TEXT,
-    genero TEXT
-)
+    Estrutura da tabela 'clientes':
+    Colunas:
+    - id: INTEGER PRIMARY KEY
+    - nome: TEXT
+    - email: TEXT
+    - idade: INTEGER
+    - cidade: TEXT
+    - estado: TEXT
+    - profissao: TEXT
+    - genero: TEXT
 
-2. compras (
-    id INTEGER,
-    cliente_id INTEGER,
-    data_compra TEXT (formato ISO: YYYY-MM-DD),
-    valor REAL,
-    categoria TEXT,
-    canal TEXT
-)
+    Estrutura da tabela 'compras':
+    Colunas:
+    - id: INTEGER PRIMARY KEY
+    - cliente_id: INTEGER
+    - data_compra: TEXT
+    - valor: REAL
+    - categoria: TEXT
+    - canal: TEXT
 
-3. suporte (
-    id INTEGER,
-    cliente_id INTEGER,
-    data_contato TEXT (formato ISO: YYYY-MM-DD),
-    tipo_contato TEXT,
-    resolvido BOOLEAN,
-    canal TEXT
-)
+    Estrutura da tabela 'suporte':
+    Colunas:
+    - id: INTEGER PRIMARY KEY
+    - cliente_id: INTEGER
+    - data_contato: TEXT
+    - tipo_contato: TEXT
+    - resolvido: BOOLEAN
+    - canal: TEXT
 
-4. campanhas_marketing (
-    id INTEGER,
-    cliente_id INTEGER,
-    nome_campanha TEXT,
-    data_envio TEXT (formato ISO: YYYY-MM-DD),
-    interagiu BOOLEAN,
-    canal TEXT
+    Estrutura da tabela 'campanhas_marketing':
+    Colunas:
+    - id: INTEGER PRIMARY KEY
+    - cliente_id: INTEGER
+    - nome_campanha: TEXT
+    - data_envio: TEXT
+    - interagiu: BOOLEAN
+    - canal: TEXT
 
-    ### Relacionamentos (JOINs):
-    - compras.cliente_id = clientes.id 
-    - suporte.cliente_id = clientes.id
-    - campanhas_marketing.cliente_id = clientes.id
+    Tabela 'compras':
+    → Coluna 'cliente_id' referencia:
+     Tabela: 'clientes'
+     Coluna: 'id'
+     On Update: NO ACTION
+     On Delete: NO ACTION
+     ----------------------------------------
+
+    Tabela 'suporte':
+    → Coluna 'cliente_id' referencia:
+        Tabela: 'clientes'
+        Coluna: 'id'
+        On Update: NO ACTION
+        On Delete: NO ACTION
+    ----------------------------------------
+
+    Tabela 'campanhas_marketing':
+    → Coluna 'cliente_id' referencia:
+        Tabela: 'clientes'
+        Coluna: 'id'
+        On Update: NO ACTION
+        On Delete: NO ACTION
+    ----------------------------------------
+
+TESTANDO INTEGRIDADE DOS RELACIONAMENTOS:
+Chaves estrangeiras habilitadas: Não
 
     ### Regras Importantes:
     ### 📌 Regras Importantes:
