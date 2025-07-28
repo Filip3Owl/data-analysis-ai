@@ -1,5 +1,48 @@
+# Ambientes virtuais
+.venv/
+env/
+venv/
+
+# Arquivos de configuração sensíveis
 .env
-.venv
-data
-__pycache__
-.mypy_cache
+*.env
+
+# Cache e arquivos temporários do Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Cache do MyPy
+.mypy_cache/
+
+# Dados e arquivos grandes
+data/
+*.sqlite3
+*.db
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Arquivos de log
+*.log
+
+# Diretórios de IDEs e editores
+.vscode/
+.idea/
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de pacotes Python
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Arquivos de testes
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
