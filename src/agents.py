@@ -80,36 +80,63 @@ class AgentsManager:
 
         # Schema do banco para referência
         self.schema = {
-            "clientes": [
-                "id",
-                "nome",
-                "email",
-                "idade",
-                "cidade",
-                "estado",
-                "profissao",
-                "genero"],
-            "compras": [
-                "id",
-                "cliente_id",
-                "data_compra",
-                "valor",
-                "categoria",
-                "canal"],
-            "suporte": [
-                "id",
-                "cliente_id",
-                "data_contato",
-                "tipo_contato",
-                "resolvido",
-                "canal"],
-            "campanhas_marketing": [
-                "id",
-                "cliente_id",
-                "nome_campanha",
-                "data_envio",
-                "interagiu",
-                "canal"]}
+    "clientes": {
+        "columns": [
+            {"name": "id", "type": "INTEGER", "description": "Chave primária", "primary_key": True},
+            {"name": "nome", "type": "TEXT", "description": "Nome completo do cliente"},
+            {"name": "email", "type": "TEXT", "description": "E-mail único do cliente"},
+            {"name": "idade", "type": "INTEGER", "description": "Idade em anos"},
+            {"name": "cidade", "type": "TEXT", "description": "Cidade de residência"},
+            {"name": "estado", "type": "TEXT", "description": "Sigla do estado (ex: SP, RJ)"},
+            {"name": "profissao", "type": "TEXT", "description": "Profissão/ocupação"},
+            {"name": "genero", "type": "TEXT", "description": "Identidade de gênero"}
+        ],
+        "description": "Tabela de cadastro de clientes",
+        "foreign_keys": []
+    },
+    "compras": {
+        "columns": [
+            {"name": "id", "type": "INTEGER", "description": "Chave primária", "primary_key": True},
+            {"name": "cliente_id", "type": "INTEGER", "description": "Chave estrangeira para clientes", "foreign_key": "clientes.id"},
+            {"name": "data_compra", "type": "TEXT", "description": "Data no formato ISO (YYYY-MM-DD)"},
+            {"name": "valor", "type": "REAL", "description": "Valor total da compra"},
+            {"name": "categoria", "type": "TEXT", "description": "Categoria do produto/serviço"},
+            {"name": "canal", "type": "TEXT", "description": "Canal de venda (online/loja/telefone)"}
+        ],
+        "description": "Registro de transações de compras",
+        "foreign_keys": ["cliente_id"]
+    },
+    "suporte": {
+        "columns": [
+            {"name": "id", "type": "INTEGER", "description": "Chave primária", "primary_key": True},
+            {"name": "cliente_id", "type": "INTEGER", "description": "Chave estrangeira para clientes", "foreign_key": "clientes.id"},
+            {"name": "data_contato", "type": "TEXT", "description": "Data no formato ISO (YYYY-MM-DD)"},
+            {"name": "tipo_contato", "type": "TEXT", "description": "Tipo de solicitação (reclamação/duvida/elogio)"},
+            {"name": "resolvido", "type": "BOOLEAN", "description": "Indica se o ticket foi resolvido (0/1)"},
+            {"name": "canal", "type": "TEXT", "description": "Canal de atendimento (email/telefone/chat)"}
+        ],
+        "description": "Registro de atendimentos ao cliente",
+        "foreign_keys": ["cliente_id"]
+    },
+    "campanhas_marketing": {
+        "columns": [
+            {"name": "id", "type": "INTEGER", "description": "Chave primária", "primary_key": True},
+            {"name": "cliente_id", "type": "INTEGER", "description": "Chave estrangeira para clientes", "foreign_key": "clientes.id"},
+            {"name": "nome_campanha", "type": "TEXT", "description": "Nome/identificador da campanha"},
+            {"name": "data_envio", "type": "TEXT", "description": "Data no formato ISO (YYYY-MM-DD)"},
+            {"name": "interagiu", "type": "BOOLEAN", "description": "Se o cliente interagiu com a campanha (0/1)"},
+            {"name": "canal", "type": "TEXT", "description": "Canal de marketing (email/sms/push/whatsapp)"}
+        ],
+        "description": "Registro de campanhas de marketing enviadas",
+        "foreign_keys": ["cliente_id"]
+    },
+    "metadata": {
+        "database_type": "SQLite",
+        "date_format": "ISO 8601 (YYYY-MM-DD)",
+        "version": "1.0",
+        "description": "Esquema para sistema de CRM e vendas"
+    }
+}
 
     def interpret_request(self, user_input: str) -> Dict[str, Any]:
         """
