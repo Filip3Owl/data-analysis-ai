@@ -1,6 +1,7 @@
 from langchain.prompts import PromptTemplate
 
 # Prompt para interpretação das perguntas
+# Adaptar prompts
 INTERPRETATION_PROMPT = PromptTemplate(
     input_variables=["user_input"],
     template="""
@@ -8,78 +9,85 @@ INTERPRETATION_PROMPT = PromptTemplate(
 
     ### 📊 Estrutura do Banco de Dados:
 
-1. clientes (
-    id INTEGER,
-    nome TEXT,
-    email TEXT,
-    idade INTEGER,
-    cidade TEXT,
-    estado TEXT,
-    profissao TEXT,
-    genero TEXT
-)
 
-2. compras (
-    id INTEGER,
-    cliente_id INTEGER,
-    data_compra TEXT (formato ISO: YYYY-MM-DD),
-    valor REAL,
-    categoria TEXT,
-    canal TEXT
-)
+    - sqlite_sequence
+    - clientes
+    - compras
+    - suporte
+    - campanhas_marketing
 
-3. suporte (
-    id INTEGER,
-    cliente_id INTEGER,
-    data_contato TEXT (formato ISO: YYYY-MM-DD),
-    tipo_contato TEXT,
-    resolvido BOOLEAN,
-    canal TEXT
-)
+    Estrutura da tabela 'clientes':
+    Colunas:
+    - id: INTEGER PRIMARY KEY
+    - nome: TEXT
+    - email: TEXT
+    - idade: INTEGER
+    - cidade: TEXT
+    - estado: TEXT
+    - profissao: TEXT
+    - genero: TEXT
 
-4. campanhas_marketing (
-    id INTEGER,
-    cliente_id INTEGER,
-    nome_campanha TEXT,
-    data_envio TEXT (formato ISO: YYYY-MM-DD),
-    interagiu BOOLEAN,
-    canal TEXT
-)
+    Estrutura da tabela 'compras':
+    Colunas:
+    - id: INTEGER PRIMARY KEY
+    - cliente_id: INTEGER
+    - data_compra: TEXT
+    - valor: REAL
+    - categoria: TEXT
+    - canal: TEXT
 
-    ### Solicitação do Usuário:
-    "{user_input}"
+    Estrutura da tabela 'suporte':
+    Colunas:
+    - id: INTEGER PRIMARY KEY
+    - cliente_id: INTEGER
+    - data_contato: TEXT
+    - tipo_contato: TEXT
+    - resolvido: BOOLEAN
+    - canal: TEXT
 
-    ### Instruções:
-    1. Analise a pergunta e identifique quais tabelas são necessárias
-    2. Determine os filtros relevantes (WHERE)
-    3. Identifique as métricas a calcular (COUNT, SUM, AVG, etc.)
-    4. Especifique os campos para agrupamento (GROUP BY)
-    5. Defina o formato de saída desejado (tabela/gráfico/texto)
-    6. Para ordenação, considere ORDER BY quando relevante
+    Estrutura da tabela 'campanhas_marketing':
+    Colunas:
+    - id: INTEGER PRIMARY KEY
+    - cliente_id: INTEGER
+    - nome_campanha: TEXT
+    - data_envio: TEXT
+    - interagiu: BOOLEAN
+    - canal: TEXT
 
-    Retorne APENAS um JSON válido com esta estrutura:
-    {{
-        "intencao": "Descrição clara do objetivo",
-        "tabelas": ["lista", "de", "tabelas"],
-        "filtros": ["condicao1", "condicao2"],
-        "agregacoes": ["funcao(coluna) AS alias"],
-        "grupo_por": ["coluna1", "coluna2"],
-        "ordenacao": ["coluna DESC/ASC"],
-        "limite": 10,
-        "formato_saida": "tabela/gráfico/texto"
-    }}
+        ### Solicitação do Usuário:
+        "{user_input}"
 
-    Exemplo para "Top 5 estados com mais vendas em 2024":
-    {{
-        "intencao": "Ranking dos 5 estados com maior volume de vendas em 2024",
-        "tabelas": ["compras", "clientes"],
-        "filtros": ["strftime('%Y', compras.data_compra) = '2024'"],
-        "agregacoes": ["SUM(compras.valor) AS total_vendas", "COUNT(compras.id) AS total_pedidos"],
-        "grupo_por": ["clientes.estado"],
-        "ordenacao": ["total_vendas DESC"],
-        "limite": 5,
-        "formato_saida": "tabela"
-    }}
+        ### Instruções:
+        1. Analise a pergunta e identifique quais tabelas são necessárias
+        2. Determine os filtros relevantes (WHERE)
+        3. Identifique as métricas a calcular (COUNT, SUM, AVG, etc.)
+        4. Especifique os campos para agrupamento (GROUP BY)
+        5. Defina o formato de saída desejado (tabela/gráfico/texto)
+        6. Para ordenação, considere ORDER BY quando relevante
+
+        Retorne APENAS um JSON válido com esta estrutura:
+        {{
+            "intencao": "Descrição clara do objetivo",
+            "tabelas": ["lista", "de", "tabelas"],
+            "filtros": ["condicao1", "condicao2"],
+            "agregacoes": ["funcao(coluna) AS alias"],
+            "grupo_por": ["coluna1", "coluna2"],
+            "ordenacao": ["coluna DESC/ASC"],
+            "limite": 10,
+            "formato_saida": "tabela/gráfico/texto"
+        }}
+
+        Exemplo para "Top 5 estados com mais vendas em 2024":
+        {{
+            "intencao": "Ranking dos 5 estados com maior volume de vendas em 2024",
+            "tabelas": ["compras", "clientes"],
+            "filtros": ["strftime('%Y', compras.data_compra) = '2024'"],
+            "agregacoes": ["SUM(compras.valor) AS total_vendas", "COUNT(compras.id) AS total_pedidos"],
+            "grupo_por": ["clientes.estado"],
+            "ordenacao": ["total_vendas DESC"],
+            "limite": 5,
+            "formato_saida": "tabela"
+        }}
     """ 
 )
 
@@ -89,77 +97,139 @@ SQL_PROMPT = PromptTemplate(
     template="""
     Você é um especialista em SQLite. Gere uma query SQL válida seguindo estas regras:
 
-    ### Tabelas Disponíveis:
+    ### Tabelas Disponíveis e Estrutura:
+    ### Tabelas Disponíveis e Estrutura:
     1. clientes (
-    id INTEGER,
-    nome TEXT,
-    email TEXT,
-    idade INTEGER,
-    cidade TEXT,
-    estado TEXT,
-    profissao TEXT,
-    genero TEXT
-)
+        id INTEGER PRIMARY KEY,
+        nome TEXT,
+        email TEXT,
+        idade INTEGER,
+        cidade TEXT,
+        estado TEXT,
+        profissao TEXT,
+        genero TEXT
+    )
+        id INTEGER PRIMARY KEY,
+        nome TEXT,
+        email TEXT,
+        idade INTEGER,
+        cidade TEXT,
+        estado TEXT,
+        profissao TEXT,
+        genero TEXT
+    )
 
-2. compras (
-    id INTEGER,
-    cliente_id INTEGER,
-    data_compra TEXT (formato ISO: YYYY-MM-DD),
-    valor REAL,
-    categoria TEXT,
-    canal TEXT
-)
+    2. compras (
+        id INTEGER PRIMARY KEY,
+        cliente_id INTEGER,
+        data_compra TEXT (formato ISO: YYYY-MM-DD),
+        valor REAL,
+        categoria TEXT,
+        canal TEXT,
+        FOREIGN KEY(cliente_id) REFERENCES clientes(id)
+    )
+    2. compras (
+        id INTEGER PRIMARY KEY,
+        cliente_id INTEGER,
+        data_compra TEXT (formato ISO: YYYY-MM-DD),
+        valor REAL,
+        categoria TEXT,
+        canal TEXT,
+        FOREIGN KEY(cliente_id) REFERENCES clientes(id)
+    )
 
-3. suporte (
-    id INTEGER,
-    cliente_id INTEGER,
-    data_contato TEXT (formato ISO: YYYY-MM-DD),
-    tipo_contato TEXT,
-    resolvido BOOLEAN,
-    canal TEXT
-)
+    3. suporte (
+        id INTEGER PRIMARY KEY,
+        cliente_id INTEGER,
+        data_contato TEXT (formato ISO: YYYY-MM-DD),
+        tipo_contato TEXT,
+        resolvido BOOLEAN,
+        canal TEXT,
+        FOREIGN KEY(cliente_id) REFERENCES clientes(id)
+    )
+    3. suporte (
+        id INTEGER PRIMARY KEY,
+        cliente_id INTEGER,
+        data_contato TEXT (formato ISO: YYYY-MM-DD),
+        tipo_contato TEXT,
+        resolvido BOOLEAN,
+        canal TEXT,
+        FOREIGN KEY(cliente_id) REFERENCES clientes(id)
+    )
 
-4. campanhas_marketing (
-    id INTEGER,
-    cliente_id INTEGER,
-    nome_campanha TEXT,
-    data_envio TEXT (formato ISO: YYYY-MM-DD),
-    interagiu BOOLEAN,
-    canal TEXT
+    4. campanhas_marketing (
+        id INTEGER PRIMARY KEY,
+        cliente_id INTEGER,
+        nome_campanha TEXT,
+        data_envio TEXT (formato ISO: YYYY-MM-DD),
+        interagiu BOOLEAN,
+        canal TEXT,
+        FOREIGN KEY(cliente_id) REFERENCES clientes(id)
+    )
+
+    ### Convenções de Aliases:
+    - clientes → c
+    - compras → co
+    - suporte → s
+    - campanhas_marketing → cm
 
     ### Relacionamentos (JOINs):
     - compras.cliente_id = clientes.id 
     - suporte.cliente_id = clientes.id
     - campanhas_marketing.cliente_id = clientes.id
 
-    ### Regras Importantes:
-    ### 📌 Regras Importantes:
-    1. Use `INNER JOIN` sempre que precisar combinar dados entre tabelas relacionadas
-    2. Use **aliases** para tabelas para tornar o SQL mais legível (ex: `c` para `clientes`, `co` para `compras`)
-    3. Para filtrar por ano em campos de data (armazenados como `TEXT`), use: `strftime('%Y', nome_coluna_data) = '2024'`
-    4. Para somar valores monetários com 2 casas decimais, use: `ROUND(SUM(valor), 2) AS total_valor`
-    5. Para calcular percentuais, use: `ROUND((COUNT(*) * 100.0 / total), 2)`, onde `total` pode vir de uma **subconsulta** ou **CTE**
-
+    ### Regras SQL Importantes:
+    1. Use INNER JOIN para combinar tabelas relacionadas (a menos que precise de LEFT JOIN)
+    2. Sempre use aliases para tabelas
+    3. Para datas:
+       - Filtrar por ano: strftime('%Y', campo_data) = '2024'
+       - Filtrar por mês: strftime('%m', campo_data) = '03'
+       - Intervalo: campo_data BETWEEN '2024-01-01' AND '2024-12-31'
+    4. Para valores monetários:
+       - Soma: ROUND(SUM(valor), 2) AS total
+       - Média: ROUND(AVG(valor), 2) AS media
+    5. Para booleanos (resolvido/interagiu):
+       - TRUE: resolvido = 1
+       - FALSE: resolvido = 0
+    6. Para percentuais:
+       - ROUND((COUNT(*) * 100.0 / (SELECT COUNT(*) FROM tabela)), 2) AS percentual
+    7. Para contagens distintas:
+       - COUNT(DISTINCT campo) AS total_distinto
+    8. Para texto:
+       - Busca parcial: campo LIKE '%termo%'
+       - Case insensitive: LOWER(campo) = LOWER('valor')
 
     ### Interpretação da Solicitação:
     {interpretation}
 
     ### Instruções Finais:
-    - Gere APENAS a query SQL válida
-    - Sem explicações ou comentários
-    - Use nomes descritivos para aliases
+    - Gere APENAS a query SQL válida, sem explicações ou comentários
+    - Use os aliases convencionados
+    - Gere APENAS a query SQL válida, sem explicações ou comentários
+    - Use os aliases convencionados
     - Inclua LIMIT quando especificado
-    - Use ORDER BY quando há ordenação
+    - Use ORDER BY para ordenações
+    - Adicione GROUP BY para agregações
+    - Prefira CTEs (WITH) para consultas complexas
+    - Formate o SQL para legibilidade
 
-    ### Exemplo de Query Esperada:
-    SELECT
-        c.estado,
-        SUM(co.valor) AS total_vendas,
-        COUNT(co.id) AS total_pedidos
-    FROM compras co
-    INNER JOIN clientes c ON co.cliente_id = c.id
-    WHERE strftime('%Y', co.data_compra) = '2024'
-    GROUP BY c.estado
+    ### Exemplo Completo:
+    WITH clientes_ativos AS (
+        SELECT c.id, c.nome, c.estado
+        FROM clientes c
+        INNER JOIN compras co ON c.id = co.cliente_id
+        WHERE strftime('%Y', co.data_compra) = '2024'
+        GROUP BY c.id
+        HAVING COUNT(co.id) >= 3
+    )
+    SELECT 
+        ca.estado,
+        COUNT(DISTINCT ca.id) AS total_clientes,
+        ROUND(SUM(co.valor), 2) AS total_vendas,
+        ROUND(SUM(co.valor) / COUNT(DISTINCT ca.id), 2) AS ticket_medio
+    FROM clientes_ativos ca
+    INNER JOIN compras co ON ca.id = co.cliente_id
+    GROUP BY ca.estado
     ORDER BY total_vendas DESC
     LIMIT 5;
     """
