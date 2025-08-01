@@ -1,7 +1,3 @@
-Aqui está a tradução completa para o inglês do seu README:
-
----
-
 # 📊 AI-Powered Analytics – Complete Data Analysis System
 
 An intelligent data analysis system that uses AI agents to interpret natural language questions and automatically generate SQL queries, visualizations, and analytical insights.
