@@ -1,87 +1,95 @@
-# 📊 Analytics com IA - Sistema Completo de Análise de Dados
+Aqui está a tradução completa para o inglês do seu README:
 
-Um sistema inteligente de análise de dados que utiliza agentes de IA para interpretar perguntas em linguagem natural e gerar automaticamente consultas SQL, visualizações e insights analíticos.
+---
 
-## 🚀 Características Principais
+# 📊 AI-Powered Analytics – Complete Data Analysis System
 
-- **Interpretação em Linguagem Natural**: Faça perguntas em português sobre seus dados
-- **Geração Automática de SQL**: Converte automaticamente suas perguntas em queries SQL válidas
-- **Múltiplos Formatos de Saída**: Tabelas, gráficos interativos ou resumos textuais
-- **Visualizações Inteligentes**: Gráficos matplotlib e plotly gerados automaticamente
-- **Insights com IA**: Análises elaboradas e recomendações baseadas nos dados
-- **Interface Web Intuitiva**: Dashboard completo desenvolvido em Streamlit
+An intelligent data analysis system that uses AI agents to interpret natural language questions and automatically generate SQL queries, visualizations, and analytical insights.
 
-## 🏗️ Arquitetura do Sistema
+## 🚀 Key Features
 
-### Fluxo dos Agentes
+* **Natural Language Interpretation**: Ask questions in Portuguese about your data
+* **Automatic SQL Generation**: Converts your questions into valid SQL queries
+* **Multiple Output Formats**: Tables, interactive charts, or textual summaries
+* **Smart Visualizations**: Automatically generated matplotlib and Plotly charts
+* **AI-Generated Insights**: Analytical summaries and recommendations
+* **Intuitive Web Interface**: Full-featured dashboard built with Streamlit
+
+## 🏗️ System Architecture
+
+### Agent Flow
 
 ```mermaid
 graph TD
-    A[👤 Usuário] --> B[🎯 Interface Streamlit]
+    A[👤 User] --> B[🎯 Streamlit Interface]
     B --> C[🧠 AgentsManager]
-    C --> D[📝 Interpretação da Pergunta]
-    D --> E[🔍 Geração de SQL]
+    C --> D[📝 Question Interpretation]
+    D --> E[🔍 SQL Generation]
     E --> F[💾 DatabaseManager]
-    F --> G[📊 Execução da Query]
-    G --> H[🎨 Criação de Visualizações]
-    H --> I[📈 Geração de Insights]
-    I --> J[📋 Formatação da Resposta]
+    F --> G[📊 Query Execution]
+    G --> H[🎨 Visualization Creation]
+    H --> I[📈 Insight Generation]
+    I --> J[📋 Response Formatting]
     J --> B
 ```
 
-### Componentes Principais
+### Main Components
 
 #### 1. **AgentsManager** (`src/agents.py`)
-Núcleo do sistema que coordena todos os agentes:
 
-- **Agente de Interpretação**: Analisa perguntas em linguagem natural
-- **Agente SQL**: Gera queries SQL otimizadas
-- **Agente de Visualização**: Cria gráficos matplotlib e plotly
-- **Agente de Insights**: Produz análises textuais elaboradas
+The system’s core that orchestrates all agents:
+
+* **Interpretation Agent**: Understands natural language questions
+* **SQL Agent**: Generates optimized SQL queries
+* **Visualization Agent**: Creates matplotlib and Plotly charts
+* **Insight Agent**: Produces detailed textual analysis
 
 #### 2. **DatabaseManager** (`src/database.py`)
-Gerenciador robusto de conexões e operações com SQLite:
 
-- Execução segura de queries
-- Validação de dados
-- Health checks do banco
-- Gestão de conexões
+Robust SQLite connection and operation manager:
 
-#### 3. **Sistema de Prompts** (`src/prompts.py`)
-Templates otimizados para diferentes tipos de análise:
+* Safe query execution
+* Data validation
+* Database health checks
+* Connection management
 
-- `INTERPRETATION_PROMPT`: Interpreta solicitações do usuário
-- `SQL_PROMPT`: Gera SQL válido
-- `FORMATTING_PROMPT`: Formata respostas
-- `ERROR_PROMPT`: Trata erros de forma amigável
+#### 3. **Prompt System** (`src/prompts.py`)
 
-## 📦 Estrutura do Projeto
+Optimized templates for different analysis types:
+
+* `INTERPRETATION_PROMPT`: Interprets user requests
+* `SQL_PROMPT`: Generates valid SQL
+* `FORMATTING_PROMPT`: Formats responses
+* `ERROR_PROMPT`: Handles errors gracefully
+
+## 📦 Project Structure
 
 ```
 data-analysis-ai/
 ├── src/
-│   ├── agents.py              # Gerenciador de agentes IA
-│   ├── database.py            # Gerenciador de banco de dados
-│   ├── prompts.py             # Templates de prompts
-│   └── utils.py               # Utilitários
+│   ├── agents.py              # AI agent manager
+│   ├── database.py            # Database manager
+│   ├── prompts.py             # Prompt templates
+│   └── utils.py               # Utilities
 ├── data/
-│   └── clientes_completo.db   # Banco de dados SQLite
+│   └── clientes_completo.db   # SQLite database
 ├── docs/
-│   └── relatorio_insights.md  # Relatório de insights
+│   └── relatorio_insights.md  # Insights report
 ├── pngs/
-│   └── outputs/               # Imagens geradas
-├── app.py                     # Aplicação Streamlit principal
-├── requirements.txt           # Dependências Python
-├── .env                       # Variáveis de ambiente
-├── .gitignore                 # Arquivos ignorados pelo Git
-└── README.md                  # Este arquivo
+│   └── outputs/               # Generated images
+├── app.py                     # Main Streamlit app
+├── requirements.txt           # Python dependencies
+├── .env                       # Environment variables
+├── .gitignore                 # Git ignored files
+└── README.md                  # This file
 ```
 
-## 🗄️ Schema do Banco de Dados
+## 🗄️ Database Schema
 
-O sistema trabalha com 4 tabelas principais:
+The system works with 4 main tables:
 
 ### 1. **clientes**
+
 ```sql
 CREATE TABLE clientes (
     id INTEGER PRIMARY KEY,
@@ -96,11 +104,12 @@ CREATE TABLE clientes (
 ```
 
 ### 2. **compras**
+
 ```sql
 CREATE TABLE compras (
     id INTEGER PRIMARY KEY,
     cliente_id INTEGER,
-    data_compra TEXT,  -- Formato ISO: YYYY-MM-DD
+    data_compra TEXT,
     valor REAL,
     categoria TEXT,
     canal TEXT,
@@ -109,11 +118,12 @@ CREATE TABLE compras (
 ```
 
 ### 3. **suporte**
+
 ```sql
 CREATE TABLE suporte (
     id INTEGER PRIMARY KEY,
     cliente_id INTEGER,
-    data_contato TEXT,  -- Formato ISO: YYYY-MM-DD
+    data_contato TEXT,
     tipo_contato TEXT,
     resolvido BOOLEAN,
     canal TEXT,
@@ -121,66 +131,67 @@ CREATE TABLE suporte (
 );
 ```
 
-### 4. **campanhas_marketing**
+### 4. **campanhas\_marketing**
+
 ```sql
 CREATE TABLE campanhas_marketing (
     id INTEGER PRIMARY KEY,
     cliente_id INTEGER,
     nome_campanha TEXT,
-    data_envio TEXT,    -- Formato ISO: YYYY-MM-DD
+    data_envio TEXT,
     interagiu BOOLEAN,
     canal TEXT,
     FOREIGN KEY (cliente_id) REFERENCES clientes(id)
 );
 ```
 
-## 🛠️ Instalação e Configuração
+## 🛠️ Installation & Setup
 
-### Pré-requisitos
+### Requirements
 
-- Python 3.8+
-- Chave da API OpenAI
-- SQLite (já incluído no Python)
+* Python 3.8+
+* OpenAI API key
+* SQLite (bundled with Python)
 
-### 1. Clone o Repositório
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/Filip3Owl/data-analysis-ai.git
 cd data-analysis-ai
 ```
 
-### 2. Crie um Ambiente Virtual
+### 2. Create a Virtual Environment
 
 ```bash
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-# ou
+# or
 venv\Scripts\activate     # Windows
 ```
 
-### 3. Instale as Dependências
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Configure as Variáveis de Ambiente
+### 4. Set Up Environment Variables
 
-Crie um arquivo `.env` na raiz do projeto:
+Create a `.env` file in the project root:
 
 ```env
-OPENAI_API_KEY=sk-sua_chave_openai_aqui
+OPENAI_API_KEY=sk-your_openai_key_here
 ```
 
-### 5. Execute a Aplicação
+### 5. Run the Application
 
 ```bash
 streamlit run app.py
 ```
 
-A aplicação estará disponível em `http://localhost:8501`
+Access the app at `http://localhost:8501`
 
-## 📋 Dependências
+## 📋 Dependencies
 
 ```txt
 streamlit>=1.28.0
@@ -192,186 +203,208 @@ numpy>=1.24.0
 langchain>=0.0.300
 openai>=0.28.0
 python-dotenv>=1.0.0
-sqlite3  # Incluído no Python padrão
-pathlib  # Incluído no Python padrão
+sqlite3  # Bundled with Python
+pathlib  # Bundled with Python
 ```
 
-## 🎯 Como Usar
+## 🎯 How to Use
 
-### 1. **Acesse a Interface**
-Abra `http://localhost:8501` no seu navegador
+### 1. **Access the Interface**
 
-### 2. **Configure sua Chave OpenAI**
-Na barra lateral, insira sua chave da API OpenAI
+Open `http://localhost:8501` in your browser
 
-### 3. **Faça Perguntas em Linguagem Natural**
+### 2. **Enter Your OpenAI API Key**
 
-Exemplos de perguntas que você pode fazer:
+Use the sidebar to insert your key
 
-#### 📊 **Análises de Ranking**
-- "Mostre os 10 clientes que mais compraram"
-- "Top 5 estados com maior volume de vendas"
-- "Quais são as categorias de produtos mais vendidas?"
+### 3. **Ask Natural Language Questions**
 
-#### 📈 **Análises de Tendência**
-- "Evolução das vendas por mês em 2024"
-- "Tendência de contatos de suporte ao longo do tempo"
-- "Como está a performance das campanhas de marketing?"
+Example queries:
 
-#### 🥧 **Análises de Distribuição**
-- "Distribuição de clientes por estado"
-- "Participação de cada canal de vendas"
-- "Proporção de tickets de suporte resolvidos"
+#### 📊 **Ranking Analysis**
 
-#### 📋 **Consultas Específicas**
-- "Clientes do Rio Grande do Sul que compraram via app"
-- "Vendas de eletrônicos no primeiro semestre"
-- "Taxa de interação das campanhas por canal"
+* "Show the top 10 clients by purchase volume"
+* "Top 5 states with highest sales"
+* "What are the best-selling product categories?"
 
-### 4. **Escolha o Formato de Saída**
+#### 📈 **Trend Analysis**
 
-- **📋 Tabela**: Para dados detalhados e exportação
-- **📊 Gráfico**: Para visualizações interativas
-- **📝 Texto**: Para resumos e insights
+* "Monthly sales trend in 2024"
+* "Support contact trends over time"
+* "How are the marketing campaigns performing?"
 
-### 5. **Configure Opções Avançadas**
+#### 🥧 **Distribution Analysis**
 
-- **Tipo de Gráfico**: Barras, Linhas, Pizza, Área, Dispersão
-- **Limite de Registros**: 10 a 10.000 registros
-- **Ordenação**: Por qualquer coluna, crescente ou decrescente
+* "Client distribution by state"
+* "Sales channel shares"
+* "Proportion of resolved support tickets"
 
-## 🧠 Funcionalidades Inteligentes
+#### 📋 **Specific Queries**
 
-### Interpretação Automática
-O sistema identifica automaticamente:
-- **Tipo de análise**: Ranking, distribuição, tendência, comparação
-- **Tabelas necessárias**: Baseado no contexto da pergunta
-- **Filtros relevantes**: Datas, categorias, valores
-- **Métricas apropriadas**: COUNT, SUM, AVG, etc.
-- **Tipo de visualização**: Gráfico mais adequado para os dados
+* "Clients from Rio Grande do Sul who purchased via app"
+* "Electronics sales in the first half of the year"
+* "Campaign interaction rate by channel"
 
-### Geração de SQL Inteligente
-- **JOINs automáticos**: Entre tabelas relacionadas
-- **Formatação de datas**: Usando `strftime` para SQLite
-- **Aliases descritivos**: Para melhor legibilidade
-- **Validação de queries**: Antes da execução
-- **Otimização automática**: Para melhor performance
+### 4. **Choose Output Format**
 
-### Insights com IA
-O sistema gera automaticamente:
-- **Principais descobertas**: Dos dados analisados
-- **Tendências identificadas**: Padrões nos dados
-- **Insights de negócio**: Relevantes para tomada de decisão
-- **Recomendações**: Baseadas nos resultados
-- **Análise de outliers**: Valores atípicos
-- **Estatísticas descritivas**: Médias, totais, variabilidade
+* **📋 Table**: For detailed data and export
+* **📊 Chart**: For interactive visualizations
+* **📝 Text**: For summaries and insights
 
-## 📊 Tipos de Visualização
+### 5. **Configure Advanced Options**
 
-### Gráficos Matplotlib
-- Estilo otimizado para apresentações
-- Cores harmoniosas
-- Anotações automáticas de valores
-- Formatação responsiva
+* **Chart Type**: Bar, Line, Pie, Area, Scatter
+* **Record Limit**: 10 to 10,000 rows
+* **Sorting**: By any column, ascending or descending
 
-### Gráficos Plotly
-- Interatividade completa
-- Zoom, pan, hover
-- Exportação em diversos formatos
-- Animações suaves
+## 🧠 Intelligent Features
 
-### Tabelas Inteligentes
-- Formatação automática de valores monetários
-- Ordenação por qualquer coluna
-- Paginação otimizada
-- Exportação em CSV
+### Automatic Interpretation
 
-## 🔧 Configurações Avançadas
+The system automatically identifies:
 
-### Personalização de Prompts
-Edite `src/prompts.py` para:
-- Adaptar para seu domínio específico
-- Incluir novos tipos de análise
-- Melhorar a precisão das interpretações
+* **Type of analysis**: Ranking, distribution, trend, comparison
+* **Relevant tables**: Based on context
+* **Filters**: Dates, categories, values
+* **Metrics**: COUNT, SUM, AVG, etc.
+* **Visualization type**: Best suited for the data
 
-### Extensão do Schema
-Para adicionar novas tabelas:
-1. Atualize o schema em `src/prompts.py`
-2. Modifique o `AgentsManager` se necessário
-3. Teste com queries simples primeiro
+### Smart SQL Generation
 
-### Otimização de Performance
-- Ajuste o `record_limit` para datasets grandes
-- Use índices no banco SQLite
-- Configure cache para queries frequentes
+* **Automatic JOINs**: Between related tables
+* **Date formatting**: Using `strftime` in SQLite
+* **Descriptive aliases**: For readability
+* **Query validation**: Before execution
+* **Auto optimization**: For performance
 
-## 🚨 Tratamento de Erros
+### AI-Powered Insights
 
-O sistema inclui tratamento robusto de erros:
+The system automatically produces:
 
-- **Queries inválidas**: Mensagens claras e sugestões
-- **Dados não encontrados**: Diagnóstico automático
-- **Falhas de conexão**: Retry automático
-- **Erros de IA**: Fallback para métodos tradicionais
+* **Key findings**: From the analysis
+* **Detected trends**: Patterns in the data
+* **Business insights**: Actionable recommendations
+* **Outlier analysis**: Detect unusual values
+* **Descriptive stats**: Averages, totals, variation
 
-## 🔒 Segurança
+## 📊 Visualization Types
 
-- **Validação de SQL**: Previne injection attacks
-- **Sanitização de inputs**: Limpeza automática
-- **Chaves de API**: Armazenamento seguro
-- **Logs de auditoria**: Para monitoramento
+### Matplotlib Charts
 
-## 📈 Métricas e Monitoramento
+* Presentation-ready style
+* Harmonious colors
+* Auto-labeled values
+* Responsive layout
 
-O sistema oferece:
-- **Health checks**: Status do banco em tempo real
-- **Métricas de usage**: Queries executadas
-- **Performance tracking**: Tempos de resposta
-- **Error rates**: Taxa de falhas
+### Plotly Charts
 
-## 🤝 Contribuição
+* Full interactivity
+* Zoom, pan, hover
+* Multi-format export
+* Smooth animations
 
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
+### Smart Tables
+
+* Auto-formatting for currency
+* Sortable columns
+* Optimized pagination
+* CSV export
+
+## 🔧 Advanced Configuration
+
+### Prompt Customization
+
+Edit `src/prompts.py` to:
+
+* Adapt to your domain
+* Add new analysis types
+* Improve interpretation accuracy
+
+### Schema Extension
+
+To add new tables:
+
+1. Update schema in `src/prompts.py`
+2. Modify `AgentsManager` if needed
+3. Test with simple queries first
+
+### Performance Optimization
+
+* Adjust `record_limit` for large datasets
+* Use indexes in SQLite
+* Enable caching for frequent queries
+
+## 🚨 Error Handling
+
+The system includes robust error handling:
+
+* **Invalid queries**: Clear messages and suggestions
+* **No data found**: Auto diagnosis
+* **Connection failures**: Auto retries
+* **AI errors**: Fallback to traditional methods
+
+## 🔒 Security
+
+* **SQL validation**: Prevents injection attacks
+* **Input sanitization**: Auto-cleaning
+* **API key protection**: Stored securely
+* **Audit logs**: For monitoring
+
+## 📈 Metrics & Monitoring
+
+The system provides:
+
+* **Health checks**: Real-time DB status
+* **Usage metrics**: Executed queries
+* **Performance tracking**: Response times
+* **Error rates**: Failure tracking
+
+## 🤝 Contributing
+
+1. Fork the project
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## 📝 Roadmap
 
-### Próximas Funcionalidades
-- [ ] Suporte a PostgreSQL e MySQL
-- [ ] Dashboard de administração
-- [ ] APIs REST para integração
-- [ ] Cache inteligente de queries
-- [ ] Exportação para PowerBI/Tableau
-- [ ] Alertas automáticos
-- [ ] Análise preditiva com ML
+### Upcoming Features
 
-### Melhorias Planejadas
-- [ ] Interface mobile responsiva
-- [ ] Suporte a múltiplos idiomas
-- [ ] Temas customizáveis
-- [ ] Scheduled reports
-- [ ] Data governance
+* [ ] PostgreSQL and MySQL support
+* [ ] Admin dashboard
+* [ ] REST APIs for integration
+* [ ] Smart query caching
+* [ ] PowerBI/Tableau export
+* [ ] Automated alerts
+* [ ] Predictive analysis with ML
 
-## 📄 Licença
+### Planned Improvements
 
-Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
+* [ ] Responsive mobile UI
+* [ ] Multilingual support
+* [ ] Custom themes
+* [ ] Scheduled reports
+* [ ] Data governance tools
 
-## 👨‍💻 Autor
+## 📄 License
+
+This project is licensed under the MIT License – see [LICENSE](LICENSE) for details.
+
+## 👨‍💻 Author
 
 **Filipe Rangel**
-- GitHub: [@Filip3Owl](https://github.com/Filip3Owl)
-- LinkedIn: [Filipe Rangel](https://www.linkedin.com/in/filiperangelambrosio/)
 
-## 🙏 Agradecimentos
+* GitHub: [@Filip3Owl](https://github.com/Filip3Owl)
+* LinkedIn: [Filipe Rangel](https://www.linkedin.com/in/filiperangelambrosio/)
 
-- Franq OpenBank pelo excelente desafio
-- Streamlit pela excelente framework
-- Plotly pelos gráficos interativos
-- Comunidade Python pelo suporte
+## 🙏 Acknowledgements
+
+* Franq OpenBank for the great challenge
+* Streamlit for the powerful framework
+* Plotly for the interactive charts
+* Python community for continuous support
 
 ---
 
-⭐ **Se este projeto foi útil para você, deixe uma estrela!** ⭐
+Se quiser, posso te ajudar com versão em PDF, publicação no LinkedIn, e até sugestões para divulgação. Deseja isso?
